@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --hero-gradient: linear-gradient(135deg, #e8ddf7 0%, #f6eaf4 55%, #f9f2f5 100%);
+}
+
+body {
+  @apply bg-background text-ink-primary antialiased;
+}
+
+.hero-gradient {
+  background-image: var(--hero-gradient);
+}
