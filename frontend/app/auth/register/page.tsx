@@ -25,17 +25,29 @@ type FormData = z.infer<typeof schema>;
 
 function friendlyError(err: unknown): string {
   if (err instanceof FirebaseError) {
+    // Log the exact code so 400s from identitytoolkit are diagnosable.
+    console.error("[firebase/auth]", err.code, err.message);
     switch (err.code) {
       case "auth/email-already-in-use":
         return "An account with this email already exists. Try logging in.";
       case "auth/weak-password":
         return "Password is too weak — use at least 8 characters.";
+      case "auth/invalid-email":
+        return "That email address doesn't look right.";
+      case "auth/operation-not-allowed":
+      case "auth/admin-restricted-operation":
+        return "Email sign-up isn't enabled yet. Enable the Email/Password provider in the Firebase console.";
+      case "auth/api-key-not-valid":
+        return "Firebase API key is invalid — check NEXT_PUBLIC_FIREBASE_* in .env.local.";
+      case "auth/network-request-failed":
+        return "Network error. Check your connection and try again.";
       case "auth/popup-closed-by-user":
         return "Google sign-in was cancelled.";
       default:
         return err.message;
     }
   }
+  console.error(err);
   return "Something went wrong. Please try again.";
 }
 

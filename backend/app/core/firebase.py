@@ -13,8 +13,10 @@ from .config import get_settings
 @lru_cache
 def get_firebase_admin() -> firebase_admin.App:
     settings = get_settings()
-    if get_app(name="interviai-admin", ignore_exception=True) is not None:
+    try:
         return get_app(name="interviai-admin")
+    except ValueError:
+        pass  # App not yet initialized — fall through and create it.
     cred: fb_credentials.Credentials | None = None
     if settings.firebase_service_account_json:
         import json
