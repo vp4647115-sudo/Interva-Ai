@@ -1,7 +1,16 @@
-# Local env files
+# Environment files (secrets — add to Vercel dashboard instead)
 .env
 .env.local
 .env.*.local
 
+# Dependencies
 node_modules/
+
+# Next.js build output
 .next/
+out/
+
+# Build artifacts
+tsc-out.txt
+build-log.txt
+tsconfig.tsbuildinfo

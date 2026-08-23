@@ -1,19 +1,41 @@
+# Dependencies
 node_modules/
+
+# Next.js build output
 .next/
 out/
+
+# Environment files (secrets)
 .env
 .env.local
+.env.*.local
+*.env
+
+# Python
 __pycache__/
 *.pyc
 .venv/
-backend/.env
 *.db
 
-*.env
-.env
+# Backend secrets
+backend/.env
+
+# Firebase service account keys
 credentials.json
 token.json
 *-firebase-adminsdk-*.json
-node_modules/
-__pycache__/
-.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts / logs
+tsc-out.txt
+build-log.txt
+tsconfig.tsbuildinfo
