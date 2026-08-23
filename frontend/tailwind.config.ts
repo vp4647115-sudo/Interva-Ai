@@ -12,10 +12,10 @@ const config: Config = {
         success: { DEFAULT: "#22C55E", soft: "#E9F9EF" },
         warning: { DEFAULT: "#F59E0B", soft: "#FFF7E6" },
         error: { DEFAULT: "#EF4444", soft: "#FEF2F2" },
-        background: "#F7F7F8",
+        background: "#EEF2FB",
         surface: "#FFFFFF",
-        "surface-alt": "#FAFAFC",
-        border: "#E7E7EC",
+        "surface-alt": "#F4F6FD",
+        border: "#DDE3F5",
         ink: { primary: "#111111", secondary: "#667085", muted: "#98A2B3" },
       },
       fontFamily: {

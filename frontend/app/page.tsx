@@ -35,7 +35,6 @@ export default function LandingPage() {
       <main>
         <Hero />
         <ValueSection />
-        <CTABanner />
         <section id="faq" className="mx-auto max-w-3xl px-6 pb-24">
           <h2 className="text-center text-3xl font-bold md:text-4xl">Frequently asked questions</h2>
           <div className="mt-10 space-y-4">
@@ -44,6 +43,7 @@ export default function LandingPage() {
             ))}
           </div>
         </section>
+        <CTABanner />
       </main>
       <Footer />
     </>

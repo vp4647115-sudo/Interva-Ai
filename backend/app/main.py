@@ -4,7 +4,10 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .api.admin_questions import router as admin_questions_router
 from .api.auth import router as auth_router
+from .api.crud import router as crud_router
+from .api.onboarding import router as onboarding_router
 from .core.config import get_settings
 
 settings = get_settings()
@@ -20,6 +23,9 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(onboarding_router)
+app.include_router(crud_router)
+app.include_router(admin_questions_router)
 
 
 @app.get("/health")

@@ -1,22 +1,39 @@
+const candidatePhotos: Record<string, string> = {
+  "Priya Sharma": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=96&h=96&fit=crop&crop=faces",
+  "James Lee": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop&crop=faces",
+  "Ana Costa": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=96&h=96&fit=crop&crop=faces",
+  "Omar Haddad": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=96&h=96&fit=crop&crop=faces",
+};
+
 export function AvatarStack({ names }: { names: string[] }) {
-  const initials = (n: string) =>
-    n
-      .split(" ")
-      .map((p) => p[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase();
   return (
     <div className="flex -space-x-2">
-      {names.map((n) => (
-        <div
-          key={n}
-          title={n}
-          className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-primary-soft text-xs font-bold text-primary"
-        >
-          {initials(n)}
-        </div>
-      ))}
+      {names.map((n) => {
+        const src = candidatePhotos[n];
+        return src ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={n}
+            src={src}
+            alt={n}
+            title={n}
+            className="h-9 w-9 rounded-full border-2 border-white object-cover"
+          />
+        ) : (
+          <div
+            key={n}
+            title={n}
+            className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-primary-soft text-xs font-bold text-primary"
+          >
+            {n
+              .split(" ")
+              .map((p) => p[0])
+              .slice(0, 2)
+              .join("")
+              .toUpperCase()}
+          </div>
+        );
+      })}
     </div>
   );
 }

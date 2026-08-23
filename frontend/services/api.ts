@@ -11,6 +11,71 @@ export interface UserOut {
   email_verified: boolean;
 }
 
+export interface EducationEntry {
+  id: string;
+  school: string;
+  degree: string | null;
+  field_of_study: string | null;
+  start_date: string | null;
+  end_date: string | null;
+}
+
+export interface ExperienceEntry {
+  id: string;
+  company: string;
+  title: string;
+  description: string | null;
+  start_date: string | null;
+  end_date: string | null;
+}
+
+export interface SkillEntry {
+  id: string;
+  name: string;
+  level: number;
+}
+
+export interface Preferences {
+  target_roles: string[];
+  seniority: string | null;
+  preferred_industries: string[];
+}
+
+export interface WizardState {
+  completed_steps: string[];
+  current_step: number;
+  finished: boolean;
+}
+
+export interface DashboardStats {
+  completion_percent: number;
+  education_count: number;
+  experience_count: number;
+  skill_count: number;
+}
+
+export interface ResumeEntry {
+  id: string;
+  filename: string;
+  storage_key: string | null;
+  mime_type: string | null;
+  size_bytes: number | null;
+  status: "uploaded" | "parsing" | "parsed" | "failed";
+}
+
+export interface InterviewSession {
+  id: string;
+  role: string;
+  interview_type: string;
+  difficulty: "easy" | "medium" | "hard";
+  duration_minutes: number;
+  status: "draft" | "in_progress" | "completed" | "abandoned";
+  score: number | null;
+  started_at: string | null;
+  finished_at: string | null;
+  created_at: string | null;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = await getIdToken();
   const resp = await fetch(`${API_BASE}/api${path}`, {
@@ -30,4 +95,90 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const apiClient = {
   me: () => request<UserOut>("/auth/me"),
+
+  // Onboarding wizard state
+  getWizardState: () => request<WizardState>("/onboarding/state"),
+  saveWizardState: (state: WizardState) =>
+    request<WizardState>("/onboarding/state", {
+      method: "PUT",
+      body: JSON.stringify(state),
+    }),
+  finishOnboarding: () =>
+    request<WizardState>("/onboarding/finish", { method: "POST" }),
+
+  // Education
+  listEducation: () => request<EducationEntry[]>("/onboarding/education"),
+  addEducation: (entry: Omit<EducationEntry, "id">) =>
+    request<EducationEntry>("/onboarding/education", {
+      method: "POST",
+      body: JSON.stringify(entry),
+    }),
+  deleteEducation: (id: string) =>
+    request<void>(`/onboarding/education/${id}`, { method: "DELETE" }),
+
+  // Experience
+  listExperience: () => request<ExperienceEntry[]>("/onboarding/experience"),
+  addExperience: (entry: Omit<ExperienceEntry, "id">) =>
+    request<ExperienceEntry>("/onboarding/experience", {
+      method: "POST",
+      body: JSON.stringify(entry),
+    }),
+  deleteExperience: (id: string) =>
+    request<void>(`/onboarding/experience/${id}`, { method: "DELETE" }),
+
+  // Skills
+  listSkills: () => request<SkillEntry[]>("/onboarding/skills"),
+  addSkill: (entry: Omit<SkillEntry, "id">) =>
+    request<SkillEntry>("/onboarding/skills", {
+      method: "POST",
+      body: JSON.stringify(entry),
+    }),
+  deleteSkill: (id: string) =>
+    request<void>(`/onboarding/skills/${id}`, { method: "DELETE" }),
+
+  // Preferences
+  getPreferences: () => request<Preferences>("/onboarding/preferences"),
+  savePreferences: (prefs: Preferences) =>
+    request<Preferences>("/onboarding/preferences", {
+      method: "PUT",
+      body: JSON.stringify(prefs),
+    }),
+
+  // Dashboard
+  getDashboard: () => request<DashboardStats>("/onboarding/dashboard"),
+
+  // Resumes (Phase 3 CRUD)
+  listResumes: () => request<ResumeEntry[]>("/resumes"),
+  addResume: (entry: Omit<ResumeEntry, "id" | "status">) =>
+    request<ResumeEntry>("/resumes", {
+      method: "POST",
+      body: JSON.stringify(entry),
+    }),
+  updateResume: (
+    id: string,
+    patch: { extracted_text?: string; status?: ResumeEntry["status"] }
+  ) =>
+    request<ResumeEntry>(`/resumes/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(patch),
+    }),
+  deleteResume: (id: string) => request<void>(`/resumes/${id}`, { method: "DELETE" }),
+
+  // Interview session records (Phase 3 data layer)
+  listSessions: () => request<InterviewSession[]>("/interviews"),
+  createSession: (input: Omit<InterviewSession, "id" | "status" | "score" | "started_at" | "finished_at" | "created_at">) =>
+    request<InterviewSession>("/interviews", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  getSession: (id: string) => request<InterviewSession>(`/interviews/${id}`),
+  updateSessionStatus: (
+    id: string,
+    patch: { status: InterviewSession["status"]; score?: number }
+  ) =>
+    request<InterviewSession>(`/interviews/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(patch),
+    }),
+  deleteSession: (id: string) => request<void>(`/interviews/${id}`, { method: "DELETE" }),
 };

@@ -2,17 +2,23 @@ const features = [
   {
     title: "Role-specific questions",
     body: "Adaptive AI picks questions for your target role, difficulty, and experience level — no generic question dumps.",
-    icon: "🎯",
+    image:
+      "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600&q=80&auto=format&fit=crop",
+    alt: "Developer preparing for a role-specific interview",
   },
   {
     title: "Evidence-based scoring",
     body: "Every answer gets a structured evaluation across technical depth, communication, and problem solving — with proof, not just a number.",
-    icon: "📊",
+    image:
+      "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&q=80&auto=format&fit=crop",
+    alt: "Analytics dashboard showing detailed performance scores",
   },
   {
     title: "Personalized practice plan",
     body: "Weak areas are tracked across sessions and turned into a concrete plan so every mock makes you better.",
-    icon: "🧭",
+    image:
+      "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=600&q=80&auto=format&fit=crop",
+    alt: "Person planning study sessions in a notebook",
   },
 ];
 
@@ -24,12 +30,22 @@ export function ValueSection() {
       </h2>
       <div className="mt-14 grid gap-6 md:grid-cols-3">
         {features.map((f) => (
-          <div key={f.title} className="rounded-card bg-surface p-8 shadow-card transition-transform hover:-translate-y-0.5">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-2xl" aria-hidden>
-              {f.icon}
+          <div
+            key={f.title}
+            className="overflow-hidden rounded-card bg-surface shadow-card transition-transform hover:-translate-y-0.5"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={f.image}
+              alt={f.alt}
+              className="aspect-[16/10] w-full object-cover"
+            />
+            <div className="p-8">
+              <h3 className="text-lg font-bold">{f.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
+                {f.body}
+              </p>
             </div>
-            <h3 className="mt-5 text-lg font-bold">{f.title}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-ink-secondary">{f.body}</p>
           </div>
         ))}
       </div>
