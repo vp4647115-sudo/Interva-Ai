@@ -8,3 +8,12 @@ __pycache__/
 .venv/
 backend/.env
 *.db
+
+*.env
+.env
+credentials.json
+token.json
+*-firebase-adminsdk-*.json
+node_modules/
+__pycache__/
+.venv/
