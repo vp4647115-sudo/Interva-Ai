@@ -222,7 +222,7 @@ export function Footer() {
       {/* Bottom bar */}
       <div className="border-t border-border">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-6 py-6 text-sm text-ink-muted sm:flex-row">
-          <p>© {new Date().getFullYear()} InterviewAI. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} IntervAi. All rights reserved.</p>
           <div className="flex items-center gap-6">
             <a href="#" className="transition-colors hover:text-ink-primary">Privacy</a>
             <a href="#" className="transition-colors hover:text-ink-primary">Terms</a>

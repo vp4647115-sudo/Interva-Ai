@@ -27,8 +27,6 @@ Keep entries short, newest first. Log every major schema change, feature complet
 
 | Date | Change | Notes |
 |---|---|---|
-| 2026-08-23 | **Phase 2 shipped: onboarding wizard + personalized dashboard.** Backend: `app/api/onboarding.py` (resumable wizard state, education/experience/skills/preferences CRUD-lite, weighted completion %, `/dashboard` aggregate), `app/schemas/onboarding.py`, Alembic migration `109d9ec6c148`. Frontend: `/onboarding` multi-step wizard with resumable state, real `/dashboard` with completion meter + stats + "Start New Interview" CTA. Services added to `services/api.ts`. Tests 3/3 pass; `next build` clean. | Resume upload/parsing deferred — wizard step is skippable per phase.md; parsing job lands with Phase 3/4 storage work. Build needs `NODE_OPTIONS=--max-old-space-size=4096` on this machine (OOM at default heap). |
-| 2026-08-23 | **Phase 2 shipped: onboarding wizard + personalized dashboard.** Backend: `app/api/onboarding.py` (step save/get, education/experience/skills/preferences CRUD-lite, completion %), `app/schemas/onboarding.py`, models already in `models/onboarding.py`. Frontend: `/onboarding` multi-step wizard with resumable state, `/dashboard` with profile-completion meter, stats cards, weak-skill breakdown, "Start New Interview" CTA. Services added to `services/api.ts`. | Resume upload/parsing deferred — wizard step is skippable per phase.md; parsing job lands with Phase 3/4 storage work. |
 | 2026-08-22 | **Auth provider switched from Supabase Auth to Firebase Auth** (user decision). Frontend: `firebase` JS SDK added; `lib/firebase/auth.ts` handles email/password + Google popup + verification + reset; all auth pages rewritten. Backend: `firebase-admin` verifies ID tokens (`core/firebase.py`, `verify_firebase_id_token`); routes reduced to `/api/auth/sync`, `/api/auth/me`, `/api/auth/logout`; Supabase retained only for Postgres/storage. Tests 3/3 pass, tsc clean. | **Pending user action:** enable Google sign-in provider in Firebase Console (Authentication → Sign-in method) — currently returns `auth/configuration-not-found`. Also add service-account credentials to backend `.env` (FIREBASE_SERVICE_ACCOUNT_JSON or GOOGLE_APPLICATION_CREDENTIALS_PATH) so `/api/auth/sync` and `/me` work. |
 
 **Completed features:** Phase 1 auth on Firebase (email/password + verification, Google popup sign-in, password reset) and the public landing page.
@@ -43,9 +41,9 @@ Keep entries short, newest first. Log every major schema change, feature complet
 
 ## 3. Currently Working
 
-- **Active phase:** Phase 2 (onboarding → dashboard) implemented; Phase 3 (full CRUD) is next.
-- **Current file/module:** `backend/app/api/onboarding.py`, `frontend/app/onboarding/page.tsx`, `frontend/app/dashboard/page.tsx`.
-- **What's next:** Phase 3 — full CRUD for profile/education/experience/skills/resumes (edit/delete after onboarding), admin question-bank CRUD, interview session record CRUD at the data layer.
+- **Active phase:** Phase 1 (auth) implemented; Phase 2 (onboarding → dashboard) is next.
+- **Current file/module:** `backend/app/api/auth.py`, `frontend/app/auth/*`, `frontend/app/page.tsx`.
+- **What's next:** run `alembic upgrade head` against Supabase Postgres, verify the live register→verify→login flow with real Supabase email, then start Phase 2 (onboarding wizard + dashboard).
 
 ---
 

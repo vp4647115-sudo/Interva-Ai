@@ -6,7 +6,7 @@ import { QueryProvider } from "@/components/providers/QueryProvider";
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta" });
 
 export const metadata: Metadata = {
-  title: "InterviewAI — Practice interviews with AI",
+  title: "IntervAi — Practice interviews with AI",
   description:
     "Role-specific AI mock interviews with structured feedback, scores, and a personalized practice plan.",
 };

@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "sqlite+aiosqlite:///./interviai.db"
 
+    # Gemini AI (server-only; never expose to the frontend)
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.0-flash"
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -20,3 +20,35 @@ body {
 .hero-gradient {
   background-image: var(--hero-gradient);
 }
+
+.resume-paper {
+  min-height: 1100px;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  body {
+    background: white;
+  }
+
+  .print-page {
+    min-height: 0;
+    padding: 0;
+    background: white;
+  }
+
+  .print-actions {
+    display: none;
+  }
+
+  .resume-paper {
+    min-height: 0;
+    width: 210mm;
+    padding: 18mm;
+    box-shadow: none;
+  }
+}
