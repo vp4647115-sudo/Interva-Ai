@@ -54,7 +54,7 @@ export default function LoginPage() {
     setBusy(true);
     try {
       await loginWithEmail(data.email, data.password);
-      router.push("/dashboard");
+      router.push("/onboarding");
     } catch (err) {
       setServerError(friendlyError(err));
     } finally {
@@ -67,7 +67,7 @@ export default function LoginPage() {
     setBusy(true);
     try {
       await loginWithGoogle();
-      router.push("/dashboard");
+      router.push("/onboarding");
     } catch (err) {
       setServerError(friendlyError(err));
     } finally {

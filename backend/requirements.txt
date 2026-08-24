@@ -12,3 +12,4 @@ firebase-admin>=6.5
 python-dotenv>=1.0
 pytest>=8.2
 pytest-asyncio>=0.23
+python-multipart==0.0.32

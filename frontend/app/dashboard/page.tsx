@@ -4,14 +4,24 @@ export const dynamic = "force-dynamic";
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { apiClient, DashboardStats } from "@/services/api";
+import { apiClient, DashboardStats, UserOut } from "@/services/api";
 import { ErrorState, Skeleton } from "@/components/ui/States";
 import Sidebar from "@/components/dashboard/Sidebar";
+import RequireOnboarding from "@/components/auth/RequireOnboarding";
 import { firebaseAuth } from "@/lib/firebase/auth";
 import { onAuthStateChanged, type User } from "firebase/auth";
 
 export default function DashboardPage() {
+  return (
+    <RequireOnboarding>
+      <DashboardContent />
+    </RequireOnboarding>
+  );
+}
+
+function DashboardContent() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [profile, setProfile] = useState<UserOut | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
@@ -26,7 +36,9 @@ export default function DashboardPage() {
   const load = useCallback(async () => {
     if (!authUser) return;
     try {
-      setStats(await apiClient.getDashboard());
+      const [s, me] = await Promise.all([apiClient.getDashboard(), apiClient.me()]);
+      setStats(s);
+      setProfile(me);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load dashboard.");
     }
@@ -62,73 +74,54 @@ export default function DashboardPage() {
             Automatically apply to jobs matching your profile.
           </p>
         </header>
-        <section className="relative min-h-[calc(100vh-106px)] bg-white">
-          <div className="mx-auto max-w-4xl px-8 py-14 opacity-35">
-            <div className="grid grid-cols-3 gap-4">
-              {["Searching", "Applications", "Interview invites"].map((label) => (
-                <div key={label} className="rounded-card border border-border p-5">
-                  <p className="text-sm font-bold">{label}</p>
-                  <p className="mt-6 text-3xl font-extrabold text-primary">0</p>
+        <section className="min-h-[calc(100vh-106px)] bg-white px-8 py-10">
+          {/* Profile summary — saved during onboarding */}
+          <div className="mx-auto max-w-4xl">
+            <div className="flex flex-wrap items-center gap-5 rounded-card border border-border bg-surface p-6 shadow-card">
+              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-soft text-xl font-extrabold text-primary">
+                {(profile?.full_name ?? profile?.email ?? "U").slice(0, 1).toUpperCase()}
+              </span>
+              <div className="min-w-0 flex-1">
+                <h2 className="truncate text-xl font-extrabold text-ink-primary">{profile?.full_name ?? "Welcome"}</h2>
+                <p className="truncate text-sm text-ink-secondary">{profile?.email}</p>
+                {!profile?.email_verified && (
+                  <span className="mt-1 inline-block rounded-pill bg-warning-soft px-2.5 py-0.5 text-[11px] font-bold text-warning">Email not verified</span>
+                )}
+              </div>
+              <Link href="/profile" className="rounded-pill border border-border px-4 py-2 text-sm font-bold text-ink-secondary hover:border-primary hover:text-primary">Edit profile</Link>
+            </div>
+
+            <div className="mt-5 grid gap-4 sm:grid-cols-4">
+              <div className="rounded-card border border-border bg-surface p-5 shadow-card">
+                <p className="text-xs font-bold uppercase tracking-wide text-ink-muted">Profile completion</p>
+                <p className="mt-2 text-3xl font-extrabold text-primary">{stats?.completion_percent ?? 0}%</p>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-border/60">
+                  <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${stats?.completion_percent ?? 0}%` }} />
+                </div>
+              </div>
+              {[
+                ["Education", stats?.education_count ?? 0],
+                ["Experience", stats?.experience_count ?? 0],
+                ["Skills", stats?.skill_count ?? 0],
+              ].map(([label, value]) => (
+                <div key={label as string} className="rounded-card border border-border bg-surface p-5 shadow-card">
+                  <p className="text-xs font-bold uppercase tracking-wide text-ink-muted">{label}</p>
+                  <p className="mt-2 text-3xl font-extrabold text-ink-primary">{value}</p>
                 </div>
               ))}
             </div>
-          </div>
-          <div className="absolute inset-0 flex items-start justify-center bg-white/60 px-4 py-8 sm:py-10">
-            <div className="w-full max-w-[468px] rounded-modal bg-white px-8 py-9 text-center shadow-modal sm:px-10 sm:py-10">
-              <h2 className="mx-auto max-w-[340px] text-4xl font-extrabold leading-[1.15] tracking-tight text-black">
-                Your Job Hunt,
-                <br />
-                Automated
-              </h2>
-              <p className="mx-auto mt-7 max-w-[365px] text-lg font-medium leading-7 text-ink-secondary">
-                Our AI agent searches, matches, and applies to the right jobs for you — around the
-                clock. Cut out the guesswork. Skip the burnout. Get more interviews, faster.
-              </p>
-              <div className="relative mx-auto mt-7 h-[207px] max-w-[366px] overflow-hidden rounded-2xl bg-[#5b5b5d] p-3 shadow-inner">
-                <div className="h-full rotate-[-2deg] rounded-lg bg-white p-3 text-left shadow-lg">
-                  <div className="flex gap-3">
-                    <div className="w-[25%] space-y-2 border-r border-border pr-2">
-                      <div className="h-3 w-14 rounded bg-primary/25" />
-                      <div className="h-2 rounded bg-border" />
-                      <div className="h-2 rounded bg-border" />
-                      <div className="h-2 rounded bg-border" />
-                      <div className="h-2 rounded bg-border" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex justify-between">
-                        <div className="h-3 w-20 rounded bg-ink-primary/20" />
-                        <div className="h-3 w-12 rounded bg-success/40" />
-                      </div>
-                      <div className="mt-4 space-y-2">
-                        {[1, 2, 3, 4, 5].map((row) => (
-                          <div key={row} className="flex items-center gap-2">
-                            <div className="h-2 w-16 rounded bg-ink-primary/15" />
-                            <div className="h-2 flex-1 rounded bg-border" />
-                            <div className="h-2 w-10 rounded bg-success/30" />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <span className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 shadow-lg">
-                  <span className="ml-1 h-0 w-0 border-y-[10px] border-l-[16px] border-y-transparent border-l-ink-primary" />
-                </span>
-              </div>
-              <Link
-                href="/onboarding"
-                className="mt-8 block rounded-pill bg-primary px-6 py-4 text-lg font-extrabold text-white shadow-[0_3px_0_#4b31d1] transition hover:bg-primary-hover"
-              >
-                Start Auto-Apply
-              </Link>
-              <div className="mt-9 text-amber-500" aria-label="5 out of 5 stars">
-                ★ ★ ★ ★ ★
-              </div>
-              <blockquote className="mx-auto mt-2 max-w-[330px] text-base font-semibold leading-6 text-ink-primary">
-                “I woke up to 6 interview invites in my inbox, all while my AI was working
-                overnight. I got my new role in just 20 days.”
-              </blockquote>
-              <p className="mt-3 text-base font-medium text-ink-secondary">Alice B, Product Manager</p>
+
+            <div className="mt-5 grid gap-4 sm:grid-cols-3">
+              {[
+                { href: "/jobs", label: "Search jobs", desc: "Find live openings matched to your profile." },
+                { href: "/resume", label: "Build resume", desc: "Generate an AI-optimized resume in minutes." },
+                { href: "/mock-interviews", label: "Practice interviews", desc: "Get AI-scored mock interview feedback." },
+              ].map((c) => (
+                <Link key={c.href} href={c.href} className="rounded-card border border-border bg-surface p-5 shadow-card transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-modal">
+                  <p className="font-extrabold text-ink-primary">{c.label}</p>
+                  <p className="mt-1.5 text-sm leading-6 text-ink-secondary">{c.desc}</p>
+                </Link>
+              ))}
             </div>
           </div>
         </section>

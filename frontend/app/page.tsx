@@ -1,6 +1,7 @@
 import { TopNav } from "@/components/marketing/TopNav";
 import { Hero } from "@/components/marketing/Hero";
 import { ValueSection } from "@/components/marketing/ValueSection";
+import { FeatureGrid, ResumeExamples, Testimonials } from "@/components/marketing/FeatureGrid";
 import { CTABanner } from "@/components/marketing/CTABanner";
 import { FAQItem } from "@/components/ui/FAQItem";
 import { Footer } from "@/components/marketing/Footer";
@@ -35,6 +36,9 @@ export default function LandingPage() {
       <main>
         <Hero />
         <ValueSection />
+        <FeatureGrid />
+        <ResumeExamples />
+        <Testimonials />
         <section id="faq" className="mx-auto max-w-3xl px-6 pb-24">
           <h2 className="text-center text-3xl font-bold md:text-4xl">Frequently asked questions</h2>
           <div className="mt-10 space-y-4">

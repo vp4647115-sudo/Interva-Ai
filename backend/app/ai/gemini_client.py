@@ -69,3 +69,58 @@ async def generate_structured(
         raise GeminiError("Gemini returned no content") from exc
 
     return _extract_json(text)
+
+
+async def analyze_document(
+    document_bytes: bytes,
+    mime_type: str,
+    *,
+    system: str,
+    prompt: str,
+) -> dict[str, Any]:
+    """Send a document (PDF etc.) to Gemini for structured analysis.
+
+    Uses Gemini's inline document understanding; suitable for resume-sized files.
+    """
+    settings = get_settings()
+    if not settings.gemini_api_key:
+        raise GeminiError("GEMINI_API_KEY is not configured on the backend")
+
+    import base64
+
+    url = GEMINI_URL.format(model=settings.gemini_model)
+    payload: dict[str, Any] = {
+        "system_instruction": {"parts": [{"text": system}]},
+        "contents": [
+            {
+                "role": "user",
+                "parts": [
+                    {
+                        "inline_data": {
+                            "mime_type": mime_type,
+                            "data": base64.b64encode(document_bytes).decode(),
+                        }
+                    },
+                    {"text": prompt},
+                ],
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.3,
+            "maxOutputTokens": 8192,
+            "responseMimeType": "application/json",
+        },
+    }
+
+    async with httpx.AsyncClient(timeout=120) as client:
+        resp = await client.post(url, params={"key": settings.gemini_api_key}, json=payload)
+        if resp.status_code != 200:
+            raise GeminiError(f"Gemini API error {resp.status_code}: {resp.text[:300]}")
+        data = resp.json()
+
+    try:
+        text = data["candidates"][0]["content"]["parts"][0]["text"]
+    except (KeyError, IndexError) as exc:
+        raise GeminiError("Gemini returned no content") from exc
+
+    return _extract_json(text)

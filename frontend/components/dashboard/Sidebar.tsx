@@ -123,6 +123,15 @@ const groups: NavGroup[] = [
           </>
         ),
       },
+      {
+        label: "Build Communication",
+        icon: icon(
+          <>
+            <path d="M12 3a7 7 0 0 1 7 7v3l2 3h-4a7 7 0 0 1-10 0H3l2-3v-3a7 7 0 0 1 7-7z" />
+            <path d="M9 10h.01M15 10h.01M9.5 13.5a3.5 3.5 0 0 0 5 0" />
+          </>
+        ),
+      },
     ],
   },
 ];
@@ -172,32 +181,38 @@ export default function Sidebar() {
               </p>
             )}
             <ul className="space-y-1">
-              {group.items.map((item) => (
-                <li key={item.label}>
-                  {item.label === "Resumes" ? (
+              {group.items.map((item) => {
+                const routes: Record<string, string> = {
+                  Dashboard: "/dashboard",
+                  "Job Search": "/jobs",
+                  "Saved Jobs": "/saved-jobs",
+                  "Answer Library": "/answer-library",
+                  Preferences: "/preferences",
+                  "Application Kits": "/application-kits",
+                  Resumes: "/resume",
+                  "Cover Letters": "/cover-letters",
+                  "Interview Buddy": "/interview-buddy",
+                  "Mock Interviews": "/mock-interviews",
+                  "Build Communication": "/communication",
+                };
+                const href = routes[item.label];
+                return (
+                  <li key={item.label}>
                     <Link
-                      href="/resume"
+                      href={href ?? "#"}
                       title={item.label}
-                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-ink-secondary transition-colors hover:bg-surface-alt hover:text-ink-primary"
+                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
+                        item.active
+                          ? "bg-primary-soft text-primary"
+                          : "text-ink-secondary hover:bg-surface-alt hover:text-ink-primary"
+                      }`}
                     >
                       {item.icon}
                       {!collapsed && item.label}
                     </Link>
-                  ) : <a
-                    href="#"
-                    title={item.label}
-                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
-                      item.active
-                        ? "bg-surface-alt text-ink-primary"
-                        : "text-ink-secondary hover:bg-surface-alt hover:text-ink-primary"
-                    }`}
-                  >
-                    {item.icon}
-                    {!collapsed && item.label}
-                  </a>
-                  }
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         ))}

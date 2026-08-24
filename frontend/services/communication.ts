@@ -1,0 +1,87 @@
+export interface CommSkill {
+  id: string;
+  name: string;
+  category: string;
+  hasTraining: boolean;
+}
+
+export interface CommMode {
+  id: string;
+  name: string;
+  instruction: string;
+}
+
+export interface CommAnalysis {
+  success: boolean;
+  sessionId: string;
+  overallScore: number;
+  skills: Record<string, number>;
+  strengths: string[];
+  weaknesses: string[];
+  evidence: { category: string; observation: string; recommendation: string }[];
+  nextExercise: { skill: string; instruction: string };
+  coachMessage: string;
+  mode: string;
+  skill: string;
+  metrics: {
+    wordCount: number;
+    speechRate: number | null;
+    fillerCount: number;
+    fillerWords: string[];
+    sentenceCount: number;
+    avgSentenceWords: number | null;
+  };
+}
+
+export interface CommProgress {
+  sessions: {
+    id: string;
+    mode: string;
+    skill: string;
+    durationSeconds: number;
+    overallScore: number | null;
+    createdAt: string | null;
+  }[];
+  progress: {
+    overallScore: number | null;
+    skillAverages: Record<string, number>;
+    sessionCount: number;
+    totalSpeakingMinutes: number;
+    strongestSkill: string | null;
+    weakestSkill: string | null;
+    improvement: number;
+  };
+}
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const { getIdToken } = await import("@/lib/firebase/auth");
+  const token = await getIdToken();
+  const resp = await fetch(`${API_BASE}/api/communication${path}`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...init?.headers,
+    },
+  });
+  const body = await resp.json().catch(() => ({}));
+  if (!resp.ok) throw new Error(body.detail ?? "Something went wrong. Please try again.");
+  return body as T;
+}
+
+export const communicationApi = {
+  listSkills: () => request<{ skills: CommSkill[]; modes: CommMode[] }>("/skills"),
+  analyze: (input: { transcript: string; skill: string; mode: string; durationSeconds: number }) =>
+    request<CommAnalysis>("/analyze", { method: "POST", body: JSON.stringify(input) }),
+  history: () => request<CommProgress>("/history"),
+  deleteHistory: () => request<{ success: boolean }>("/history", { method: "DELETE" }),
+};
+
+export function scoreLabel(score: number): string {
+  if (score >= 85) return "Excellent";
+  if (score >= 70) return "Good Progress";
+  if (score >= 50) return "Developing";
+  return "Keep Practicing";
+}

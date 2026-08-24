@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.0-flash"
 
+    # Theirstack job data (server-only)
+    theirstack_api_key: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:
