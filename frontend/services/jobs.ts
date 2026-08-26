@@ -53,13 +53,17 @@ export async function searchJobs(
   const { getIdToken } = await import("@/lib/firebase/auth");
   const token = await getIdToken();
   const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const requestFilters = {
+    ...filters,
+    remote: filters.remote || null,
+  };
   const resp = await fetch(`${API_BASE}/api/jobs/search`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify(filters),
+    body: JSON.stringify(requestFilters),
     signal,
   });
   const body = await resp.json().catch(() => ({}));

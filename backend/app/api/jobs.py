@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from ..core.dependencies import CurrentUser
 from ..services import job_cache
@@ -44,6 +44,11 @@ class JobSearchFilters(BaseModel):
     company: str = Field(default="", max_length=120)
     page: int = Field(default=1, ge=1, le=100)
     limit: int = Field(default=20, ge=5, le=25)
+
+    @field_validator("remote", mode="before")
+    @classmethod
+    def normalize_remote(cls, value: Any) -> Any:
+        return None if value == "" else value
 
 
 @router.post("/search")
