@@ -53,6 +53,10 @@ def build_theirstack_payload(filters: dict[str, Any]) -> dict[str, Any]:
     posted_days = filters.get("postedWithinDays")
     if posted_days:
         payload["posted_at_max_age_days"] = int(posted_days)
+    elif not company:
+        # Theirstack rejects unscoped searches unless a company or date filter
+        # is present. Recent listings make the blank-filter search useful.
+        payload["posted_at_max_age_days"] = 30
 
     return payload
 
