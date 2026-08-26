@@ -4,7 +4,9 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from datetime import datetime, timedelta, timezone
+
+from fastapi import APIRouter, Depends, HTTPException, status
 import httpx
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -38,10 +40,6 @@ class AnalyzeRequest(BaseModel):
     skill: str = Field(default="clarity", max_length=60)
     mode: str = Field(default="free", max_length=40)
     durationSeconds: int = Field(default=0, ge=0, le=3600)
-
-
-class VoiceRequest(BaseModel):
-    text: str = Field(min_length=1, max_length=500)
 
 
 @router.get("/skills")
@@ -118,29 +116,43 @@ async def analyze_response(payload: AnalyzeRequest, user: CurrentUser, db=Depend
     return {"success": True, "sessionId": str(session.id), **result, "metrics": metrics}
 
 
-@router.post("/voice")
-async def generate_voice(payload: VoiceRequest, user: CurrentUser) -> Response:
-    """Speak a coach prompt with ElevenLabs when configured."""
+@router.post("/live-token")
+async def create_live_token(user: CurrentUser) -> dict[str, Any]:
+    """Create a short-lived, single-use Gemini Live client token."""
     settings = get_settings()
-    if not settings.elevenlabs_api_key:
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "ElevenLabs voice is not configured.")
-    url = f"https://api.elevenlabs.io/v1/text-to-speech/{settings.elevenlabs_voice_id}"
+    if not settings.gemini_api_key:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Gemini Live is not configured.")
+    now = datetime.now(timezone.utc)
+    url = "https://generativelanguage.googleapis.com/v1alpha/auth_tokens"
     try:
-        async with httpx.AsyncClient(timeout=30) as client:
+        async with httpx.AsyncClient(timeout=15) as client:
             response = await client.post(
                 url,
-                headers={"xi-api-key": settings.elevenlabs_api_key, "Accept": "audio/mpeg"},
+                params={"key": settings.gemini_api_key},
                 json={
-                    "text": payload.text,
-                    "model_id": "eleven_multilingual_v2",
-                    "voice_settings": {"stability": 0.5, "similarity_boost": 0.75},
+                    "config": {
+                        "uses": 1,
+                        "expire_time": (now + timedelta(minutes=30)).isoformat().replace("+00:00", "Z"),
+                        "new_session_expire_time": (now + timedelta(minutes=1)).isoformat().replace("+00:00", "Z"),
+                        "live_connect_constraints": {
+                            "model": "gemini-3.1-flash-live-preview",
+                            "config": {
+                                "response_modalities": ["AUDIO"],
+                                "input_audio_transcription": {},
+                                "output_audio_transcription": {},
+                            },
+                        },
+                    }
                 },
             )
     except httpx.HTTPError as exc:
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Could not reach ElevenLabs voice service.") from exc
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Could not reach Gemini Live token service.") from exc
     if response.status_code != 200:
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "ElevenLabs voice generation failed.")
-    return Response(content=response.content, media_type="audio/mpeg")
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Gemini Live token generation failed.")
+    data = response.json()
+    if not data.get("name"):
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Gemini Live returned an invalid token.")
+    return {"token": data["name"], "model": "gemini-3.1-flash-live-preview"}
 
 
 @router.get("/history")
