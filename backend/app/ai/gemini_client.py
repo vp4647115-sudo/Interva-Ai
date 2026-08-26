@@ -16,6 +16,10 @@ class GeminiError(RuntimeError):
     """Raised when Gemini returns an unusable response."""
 
 
+class GeminiQuotaError(GeminiError):
+    """Raised when the configured Gemini project has exhausted its quota."""
+
+
 def _extract_json(text: str) -> dict[str, Any]:
     """Parse JSON out of a model response, tolerating code fences."""
     cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", text.strip(), flags=re.MULTILINE)
@@ -53,15 +57,19 @@ async def generate_structured(
     if use_grounding:
         payload["tools"] = [{"google_search": {}}]
 
-    async with httpx.AsyncClient(timeout=90) as client:
-        resp = await client.post(
-            url,
-            params={"key": settings.gemini_api_key},
-            json=payload,
-        )
-        if resp.status_code != 200:
-            raise GeminiError(f"Gemini API error {resp.status_code}: {resp.text[:300]}")
-        data = resp.json()
+    try:
+        async with httpx.AsyncClient(timeout=90) as client:
+            resp = await client.post(
+                url,
+                params={"key": settings.gemini_api_key},
+                json=payload,
+            )
+    except httpx.RequestError as exc:
+        raise GeminiError("Could not reach the Gemini API. Please try again shortly.") from exc
+    if resp.status_code != 200:
+        error = GeminiQuotaError if resp.status_code == 429 else GeminiError
+        raise error(f"Gemini API error {resp.status_code}: {resp.text[:300]}")
+    data = resp.json()
 
     try:
         text = data["candidates"][0]["content"]["parts"][0]["text"]
@@ -112,11 +120,15 @@ async def analyze_document(
         },
     }
 
-    async with httpx.AsyncClient(timeout=120) as client:
-        resp = await client.post(url, params={"key": settings.gemini_api_key}, json=payload)
-        if resp.status_code != 200:
-            raise GeminiError(f"Gemini API error {resp.status_code}: {resp.text[:300]}")
-        data = resp.json()
+    try:
+        async with httpx.AsyncClient(timeout=120) as client:
+            resp = await client.post(url, params={"key": settings.gemini_api_key}, json=payload)
+    except httpx.RequestError as exc:
+        raise GeminiError("Could not reach the Gemini API. Please try again shortly.") from exc
+    if resp.status_code != 200:
+        error = GeminiQuotaError if resp.status_code == 429 else GeminiError
+        raise error(f"Gemini API error {resp.status_code}: {resp.text[:300]}")
+    data = resp.json()
 
     try:
         text = data["candidates"][0]["content"]["parts"][0]["text"]

@@ -10,7 +10,7 @@ from typing import Any, Literal
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
-from ..ai.gemini_client import GeminiError, generate_structured
+from ..ai.gemini_client import GeminiError, GeminiQuotaError, generate_structured
 from ..ai.resume_orchestrator import _load_system_rules
 from ..core.config import get_settings
 from ..core.dependencies import CurrentUser
@@ -32,6 +32,8 @@ async def _ai(system: str, prompt: str) -> dict[str, Any]:
     _require_gemini()
     try:
         return await generate_structured(prompt, system=system)
+    except GeminiQuotaError as exc:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "AI quota is temporarily exhausted. Check the Gemini plan or try again later.") from exc
     except GeminiError as exc:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
 

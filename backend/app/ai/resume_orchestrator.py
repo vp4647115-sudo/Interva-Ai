@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from .gemini_client import GeminiError, generate_structured
+from .gemini_client import GeminiError, GeminiQuotaError, generate_structured
 from .resume_schemas import (
     GenerateRequest,
     GenerateResponse,
@@ -66,6 +66,8 @@ async def research_market(req: GenerateRequest) -> MarketInsights:
             use_grounding=True,
         )
         grounded = True
+    except GeminiQuotaError:
+        raise
     except GeminiError:
         # Fall back to ungrounded model knowledge so the pipeline still completes.
         data = await generate_structured(

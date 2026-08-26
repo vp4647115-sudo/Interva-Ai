@@ -10,7 +10,7 @@ from sqlalchemy import select
 
 from ..ai import communication_coach
 from ..ai.communication_coach import MODES, SKILL_LIBRARY
-from ..ai.gemini_client import GeminiError
+from ..ai.gemini_client import GeminiError, GeminiQuotaError
 from ..core.config import get_settings
 from ..core.dependencies import CurrentUser
 from ..db.session import get_db
@@ -88,14 +88,10 @@ async def analyze_response(payload: AnalyzeRequest, user: CurrentUser, db=Depend
             duration_seconds=payload.durationSeconds,
             profile=profile,
         )
+    except GeminiQuotaError as exc:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "AI quota is temporarily exhausted. Check the Gemini plan or try again later.") from exc
     except GeminiError as exc:
-        message = str(exc)
-        response_status = (
-            status.HTTP_503_SERVICE_UNAVAILABLE
-            if " 429" in message or "quota" in message.lower()
-            else status.HTTP_502_BAD_GATEWAY
-        )
-        raise HTTPException(response_status, message) from exc
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
 
     session = CommunicationSession(
         user_id=user["id"],

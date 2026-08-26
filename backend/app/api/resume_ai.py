@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, status
 
 from ..ai import resume_orchestrator
-from ..ai.gemini_client import GeminiError
+from ..ai.gemini_client import GeminiError, GeminiQuotaError
 from ..ai.resume_schemas import GenerateRequest, GenerateResponse
 from ..core.config import get_settings
 from ..core.dependencies import CurrentUser
@@ -28,5 +28,7 @@ async def generate_resume_ai(payload: GenerateRequest, user: CurrentUser) -> Gen
             model_name=settings.gemini_model,
             grounded=bool(settings.gemini_api_key),
         )
+    except GeminiQuotaError as exc:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "AI quota is temporarily exhausted. Check the Gemini plan or try again later.") from exc
     except GeminiError as exc:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
