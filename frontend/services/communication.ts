@@ -67,7 +67,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     },
   });
   const body = await resp.json().catch(() => ({}));
-  if (!resp.ok) throw new Error(body.detail ?? "Something went wrong. Please try again.");
+  if (!resp.ok) {
+    if (resp.status === 503 && typeof body.detail === "string" && body.detail.toLowerCase().includes("quota")) {
+      throw new Error("AI coaching is temporarily unavailable because the Gemini quota is exhausted. Please try again later or update the backend Gemini plan/key.");
+    }
+    throw new Error(body.detail ?? "Something went wrong. Please try again.");
+  }
   return body as T;
 }
 
