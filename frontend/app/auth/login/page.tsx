@@ -14,6 +14,7 @@ import { AuthCard } from "@/components/ui/AuthCard";
 import { AuthTrustPanel } from "@/components/auth/AuthTrustPanel";
 import { PillButton } from "@/components/ui/PillButton";
 import { loginWithEmail, loginWithGoogle } from "@/lib/firebase/auth";
+import { apiClient } from "@/services/api";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -54,7 +55,8 @@ export default function LoginPage() {
     setBusy(true);
     try {
       await loginWithEmail(data.email, data.password);
-      router.push("/onboarding");
+      // First-time users → onboarding wizard; returning users → dashboard.
+      router.push(await apiClient.postLoginDestination());
     } catch (err) {
       setServerError(friendlyError(err));
     } finally {
@@ -67,7 +69,7 @@ export default function LoginPage() {
     setBusy(true);
     try {
       await loginWithGoogle();
-      router.push("/onboarding");
+      router.push(await apiClient.postLoginDestination());
     } catch (err) {
       setServerError(friendlyError(err));
     } finally {

@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     firebase_service_account_json: str = ""
     google_application_credentials_path: str = ""
 
+    # Firebase Cloud Storage (user files: resumes, images). Uses the same
+    # service-account credentials as Auth — no separate API key required.
+    firebase_storage_bucket: str = ""
+
     # Admin allowlist (seeded via env until admin CRUD exists)
     admin_emails: str = ""
 
@@ -36,10 +40,24 @@ class Settings(BaseSettings):
 
     # Gemini AI (server-only; never expose to the frontend)
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.0-flash"
+    gemini_model: str = "gemini-3.1-pro-preview"
 
     # Theirstack job data (server-only)
     theirstack_api_key: str = ""
+
+    # Outbound email (welcome message after onboarding). The sender identity is
+    # ADMIN_EMAIL (falls back to SMTP_USER when unset). For Gmail: create an
+    # App Password at https://myaccount.google.com/apppasswords and paste it
+    # below.
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    admin_email: str = ""
+    email_from_name: str = "Inter AI"
+
+    # Public application URL used in email links (never hardcode localhost).
+    app_url: str = "http://localhost:3000"
 
 
 @lru_cache

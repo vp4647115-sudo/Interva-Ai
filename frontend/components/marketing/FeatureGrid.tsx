@@ -215,7 +215,7 @@ export function Testimonials() {
             Get real-time interview help and detailed, personal feedback
           </h2>
           <div className="mt-6 flex flex-wrap items-center gap-4">
-            <Link href="/register" className="inline-flex items-center gap-2 rounded-pill bg-primary px-6 py-3 text-sm font-extrabold text-white shadow-[0_3px_0_#4b31d1] transition hover:bg-primary-hover">
+            <Link href="/auth/register" className="inline-flex items-center gap-2 rounded-pill bg-primary px-6 py-3 text-sm font-extrabold text-white shadow-[0_3px_0_#4b31d1] transition hover:bg-primary-hover">
               Start now →
             </Link>
             <span className="text-sm font-bold text-success">★★★★★ <span className="ml-1 font-semibold text-ink-secondary">4.7 · 367 Ratings</span></span>

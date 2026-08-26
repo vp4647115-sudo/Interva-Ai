@@ -25,7 +25,7 @@ export default function RequireOnboarding({ children }: { children: React.ReactN
         if (!cancelled) setChecked(true);
       } catch {
         // Not signed in or backend unreachable — send to login.
-        if (!cancelled) router.replace("/login");
+        if (!cancelled) router.replace("/auth/login");
       }
     })();
     return () => { cancelled = true; };

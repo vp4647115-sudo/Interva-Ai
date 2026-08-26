@@ -89,7 +89,13 @@ async def analyze_response(payload: AnalyzeRequest, user: CurrentUser, db=Depend
             profile=profile,
         )
     except GeminiError as exc:
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
+        message = str(exc)
+        response_status = (
+            status.HTTP_503_SERVICE_UNAVAILABLE
+            if " 429" in message or "quota" in message.lower()
+            else status.HTTP_502_BAD_GATEWAY
+        )
+        raise HTTPException(response_status, message) from exc
 
     session = CommunicationSession(
         user_id=user["id"],

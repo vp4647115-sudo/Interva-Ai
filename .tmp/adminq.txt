@@ -1,0 +1,30 @@
+﻿"""Phase 3 admin CRUD for the question bank (phase.md): add, edit, retire,
+and version entries without a deploy. All routes require the admin allowlist
+gate (`AdminUser`, rule.md Â§6)."""
+from __future__ import annotations
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from ..core.dependencies import AdminUser
+from ..db.session import get_db
+from ..models.phase3 import QuestionBankEntry
+from ..schemas.phase3 import QuestionIn, QuestionOut, QuestionUpdate
+
+router = APIRouter(prefix="/api/admin/questions", tags=["admin"])
+
+
+def _out(r: QuestionBankEntry) -> QuestionOut:
+    return QuestionOut(
+        id=str(r.id),
+        question_text=r.question_text,
+        role=r.role,
+        topic=r.topic,
+        category=r.category,
+        difficulty=r.difficulty,
+        expected_concepts=[c.strip() for c in (r.expected_concepts or "").split(",") if c.strip()],
+        ideal_answer=r.ideal_answer,
+        evaluation_rubric=r.evaluation_rubric,
+        source=r.source,
+        version=r.version,

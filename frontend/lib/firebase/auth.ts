@@ -11,6 +11,7 @@ import {
   setPersistence,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
   signOut,
   updateProfile,
   type Auth,
@@ -68,8 +69,23 @@ export async function loginWithEmail(email: string, password: string) {
 export async function loginWithGoogle() {
   const auth = getFirebaseAuth();
   const provider = new GoogleAuthProvider();
-  const cred = await signInWithPopup(auth, provider);
-  return cred.user;
+  try {
+    return await signInWithPopup(auth, provider);
+  } catch (err) {
+    // Some browsers/extensions enforce Cross-Origin-Opener-Policy which blocks
+    // reading `window.closed` on the popup (auth/popup-blocked or the popup
+    // just never resolves). Fall back to a full-page redirect flow.
+    const code = (err as { code?: string })?.code ?? "";
+    if (
+      code === "auth/popup-blocked" ||
+      code === "auth/cancelled-popup-request" ||
+      code === "auth/popup-closed-by-user"
+    ) {
+      await signInWithRedirect(auth, provider);
+      return null as never; // page navigates away; result handled after redirect
+    }
+    throw err;
+  }
 }
 
 export async function resetPassword(email: string) {
@@ -82,5 +98,9 @@ export async function logout() {
 
 export async function getIdToken(): Promise<string | null> {
   const auth = getFirebaseAuth();
+  // Firebase restores browserLocalPersistence asynchronously. Requests made
+  // during that window otherwise omit Authorization and produce a misleading
+  // backend 401 on protected routes such as /onboarding/state.
+  await auth.authStateReady();
   return auth.currentUser?.getIdToken() ?? null;
 }

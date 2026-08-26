@@ -25,6 +25,7 @@ export interface ExperienceEntry {
   company: string;
   title: string;
   description: string | null;
+  years: number | null;
   start_date: string | null;
   end_date: string | null;
 }
@@ -105,6 +106,21 @@ export const apiClient = {
     }),
   finishOnboarding: () =>
     request<WizardState>("/onboarding/finish", { method: "POST" }),
+
+  /**
+   * Post-login destination: first-time users go to the onboarding wizard;
+   * returning users (wizard finished) go straight to the dashboard.
+   * Falls back to the dashboard when the check fails so a backend hiccup
+   * never traps a signed-in user on the login page.
+   */
+  postLoginDestination: async (): Promise<"/onboarding" | "/dashboard"> => {
+    try {
+      const wizard = await apiClient.getWizardState();
+      return wizard.finished ? "/dashboard" : "/onboarding";
+    } catch {
+      return "/dashboard";
+    }
+  },
 
   // Education
   listEducation: () => request<EducationEntry[]>("/onboarding/education"),

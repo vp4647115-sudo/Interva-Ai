@@ -28,6 +28,7 @@ Keep entries short, newest first. Log every major schema change, feature complet
 | Date | Change | Notes |
 |---|---|---|
 | 2026-08-22 | **Auth provider switched from Supabase Auth to Firebase Auth** (user decision). Frontend: `firebase` JS SDK added; `lib/firebase/auth.ts` handles email/password + Google popup + verification + reset; all auth pages rewritten. Backend: `firebase-admin` verifies ID tokens (`core/firebase.py`, `verify_firebase_id_token`); routes reduced to `/api/auth/sync`, `/api/auth/me`, `/api/auth/logout`; Supabase retained only for Postgres/storage. Tests 3/3 pass, tsc clean. | **Pending user action:** enable Google sign-in provider in Firebase Console (Authentication → Sign-in method) — currently returns `auth/configuration-not-found`. Also add service-account credentials to backend `.env` (FIREBASE_SERVICE_ACCOUNT_JSON or GOOGLE_APPLICATION_CREDENTIALS_PATH) so `/api/auth/sync` and `/me` work. |
+| 2026-08-26 | **Wired missing routers into `backend/app/main.py`** — `ai_tools`, `communication`, `jobs`, `resume_ai`, and `resume_analysis` routers existed but were never registered, so every AI-tools/communication/jobs/resume-AI endpoint returned 404. All 9 routers now included; CORS verified working for GET and PUT preflights from `http://localhost:3000`. Backend tests 7/7 pass, frontend tsc clean, both servers verified running locally (uvicorn :8000, next dev :3000). | Root cause of earlier "CORS failure" reports on PUT `/api/onboarding/state` was likely a mix of the unregistered-router 404s and server not running; preflight now returns 200 with correct ACAO headers. |
 
 **Completed features:** Phase 1 auth on Firebase (email/password + verification, Google popup sign-in, password reset) and the public landing page.
 
@@ -41,9 +42,9 @@ Keep entries short, newest first. Log every major schema change, feature complet
 
 ## 3. Currently Working
 
-- **Active phase:** Phase 1 (auth) implemented; Phase 2 (onboarding → dashboard) is next.
-- **Current file/module:** `backend/app/api/auth.py`, `frontend/app/auth/*`, `frontend/app/page.tsx`.
-- **What's next:** run `alembic upgrade head` against Supabase Postgres, verify the live register→verify→login flow with real Supabase email, then start Phase 2 (onboarding wizard + dashboard).
+- **Active phase:** Phases 1–3 implemented (auth, onboarding wizard + dashboard, CRUD). Phase 4 AI features (AI tools, communication coach, jobs search, resume AI) have backend routers now wired and frontend pages present.
+- **Current file/module:** `backend/app/main.py` (all 9 routers registered), `backend/app/api/*`.
+- **What's next:** end-to-end verification of the AI features against the live Gemini key, then Phase 4 interview engine (session state machine, evaluation, reports).
 
 ---
 

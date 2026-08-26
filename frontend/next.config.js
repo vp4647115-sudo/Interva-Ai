@@ -6,6 +6,20 @@ const nextConfig = {
     unoptimized: false,
   },
 
+  // Cross-Origin-Opener-Policy must NOT be same-origin, otherwise Firebase's
+  // Google sign-in popup cannot be inspected ("policy would block the
+  // window.closed call") and login silently hangs.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Cross-Origin-Opener-Policy", value: "unsafe-none" },
+        ],
+      },
+    ];
+  },
+
   // Strict mode catches common React pitfalls early.
   reactStrictMode: true,
 

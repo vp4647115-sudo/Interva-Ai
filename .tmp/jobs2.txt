@@ -1,0 +1,40 @@
+﻿"""Job search endpoints. POST /api/jobs/search proxies Theirstack server-side."""
+from __future__ import annotations
+
+from typing import Any
+
+from fastapi import APIRouter, HTTPException, Request, status
+from pydantic import BaseModel, Field
+
+from ..core.dependencies import CurrentUser
+from ..services import job_cache
+from ..services.job_normalizer import normalize_jobs
+from ..services.theirstack_client import (
+    JobProviderError,
+    JobProviderRateLimited,
+    build_theirstack_payload,
+    fetch_theirstack_jobs,
+)
+
+router = APIRouter(prefix="/api/jobs", tags=["jobs"])
+
+# Simple per-user sliding-window rate limit (rule.md: protect external APIs).
+_RATE_LIMIT = 30
+_RATE_WINDOW_SECONDS = 60
+_user_hits: dict[str, list[float]] = {}
+
+
+def _check_rate_limit(user_id: str) -> None:
+    import time
+
+    now = time.monotonic()
+    hits = [t for t in _user_hits.get(user_id, []) if now - t < _RATE_WINDOW_SECONDS]
+    if len(hits) >= _RATE_LIMIT:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Too many searches. Please wait a moment.")
+    hits.append(now)
+    _user_hits[user_id] = hits
+
+
+class JobSearchFilters(BaseModel):
+    query: str = Field(default="", max_length=200)
+    location: str = Field(default="", max_length=200)

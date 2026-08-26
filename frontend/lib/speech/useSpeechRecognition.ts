@@ -1,5 +1,7 @@
 "use client";
 
+import { useRef, useState } from "react";
+
 /** Browser speech recognition hook — provides live transcripts for coaching.
  * Uses the Web Speech API (Chrome/Edge); falls back gracefully elsewhere. */
 
@@ -20,11 +22,7 @@ export function useSpeechRecognition(onFinal: (text: string) => void) {
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const recognitionRef = useRefLike();
-
-  function useRefLike() {
-    return { current: null as SpeechRecognitionLike | null };
-  }
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   const supported = typeof window !== "undefined" &&
     ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);

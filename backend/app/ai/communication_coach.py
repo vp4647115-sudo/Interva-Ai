@@ -34,9 +34,12 @@ MODES: dict[str, dict[str, str]] = {
 
 # Score weights per mode (spec §10). Must sum to 100.
 SCORE_WEIGHTS: dict[str, dict[str, int]] = {
-    "default": {"clarity": 15, "fluency": 15, "confidence": 15, "grammar": 10, "vocabulary": 10, "relevance": 10, "structure": 10, "pace": 5, "listening": 5, "flow": 5},
-    "interview": {"confidence": 20, "clarity": 20, "relevance": 20, "structure": 20, "grammar": 10, "vocabulary": 10},
-    "presentation": {"clarity": 25, "pace": 20, "structure": 20, "vocabulary": 20, "confidence": 15},
+    "default": {"clarity": 20, "grammar": 15, "vocabulary": 10, "structure": 15, "confidence": 15, "relevance": 10, "professionalism": 10, "conciseness": 5},
+    "interview": {"relevance": 20, "structure": 20, "confidence": 20, "clarity": 15, "professionalism": 15, "conciseness": 10},
+    "presentation": {"clarity": 25, "confidence": 20, "structure": 20, "professionalism": 15, "vocabulary": 10, "conciseness": 10},
+    "free": {"fluency": 25, "clarity": 20, "listening": 20, "relevance": 15, "confidence": 10, "grammar": 10},
+    "hr": {"professionalism": 25, "relevance": 20, "clarity": 20, "confidence": 15, "structure": 10, "conciseness": 10},
+    "storytelling": {"structure": 25, "clarity": 20, "fluency": 15, "vocabulary": 15, "relevance": 15, "confidence": 10},
 }
 
 
@@ -103,10 +106,23 @@ async def analyze_transcript(
     profile_block = json.dumps(profile or {}, ensure_ascii=False)[:1500]
 
     system = (
-        "You are an expert communication coach. Professional, encouraging, honest, constructive. "
-        "Never insult the user. Never give fake praise. Analysis must be evidence-based: quote the "
-        "user's actual words. Use hedged language for uncertainty ('may indicate hesitation'), never "
-        "claims about hidden psychological states. Return valid JSON only."
+        "You are the Inter AI Communication Coach: a personalized communication trainer, English and "
+        "language coach, speaking coach, conversation partner, interview coach, public speaking coach, "
+        "professional communication mentor, business communication coach, presentation coach, writing "
+        "coach, and progress evaluator. Your mission is measurable improvement, not artificial praise. "
+        "Follow this cycle when appropriate: ASSESS -> EXPLAIN -> DEMONSTRATE -> PRACTICE -> ANALYZE -> "
+        "CORRECT -> REPEAT -> MEASURE PROGRESS. Use only the transcript, supplied application context, "
+        "conversation history, and verified progress records. Treat missing history as unknown and never "
+        "invent scores, attempts, lessons, trends, emotions, or improvement. Adapt difficulty: simplify "
+        "and give frameworks when the user struggles; increase complexity and reduce hints when they improve. "
+        "Evaluate only dimensions relevant to the selected activity. Be supportive, honest, clear, specific, "
+        "practical, professional, and concise. Prioritize high-impact errors and do not overwhelm beginners. "
+        "When transcript-only data is supplied, distinguish observable wording/transcript issues from claims "
+        "that require audio. Never claim to evaluate pronunciation, pitch, volume, or tone without reliable "
+        "audio data. Do not claim confidence or emotion with certainty from one written response. "
+        "For interview mode ask one realistic question at a time and assess relevance, structure, confidence, "
+        "clarity, professionalism, conciseness, examples, and storytelling. For writing, distinguish minimal "
+        "correction from a stronger professional alternative. Return valid JSON only matching the requested schema."
     )
     prompt = (
         f"TRAINING SKILL:\n{skill_md}\n\n"
@@ -116,7 +132,7 @@ async def analyze_transcript(
         "TASK: Analyze the response according to the skill rules. Return JSON with exactly these keys:\n"
         f'- "skills": object with these numeric keys 0-100: {json.dumps(list(weights.keys()))}\n'
         '- "strengths": array of 2-4 short strings, each citing specific evidence\n'
-        '- "weaknesses": array of 2-4 short strings, each citing specific evidence\n'
+        '- "weaknesses": array of 2-4 short strings, each citing specific evidence and prioritizing impact\n'
         '- "evidence": array of {category, observation, recommendation} objects quoting the transcript\n'
         '- "nextExercise": {skill, instruction} — one concrete retry exercise targeting the weakest skill\n'
         '- "coachMessage": one encouraging, specific sentence of coaching feedback\n'

@@ -226,6 +226,7 @@ export default function ProfilePage() {
                             company: draft.company,
                             title: draft.title,
                             description: draft.description || null,
+                            years: null,
                             start_date: draft.start_date || null,
                             end_date: draft.end_date || null,
                           }).then(() => apiClient.deleteExperience(editingId))
@@ -339,7 +340,12 @@ export default function ProfilePage() {
                     ev.preventDefault();
                     if (!resumeFile.trim()) return;
                     void run(async () => {
-                      await apiClient.addResume({ filename: resumeFile.trim() });
+                      await apiClient.addResume({
+                        filename: resumeFile.trim(),
+                        storage_key: null,
+                        mime_type: null,
+                        size_bytes: null,
+                      });
                       setResumeFile("");
                     });
                   }}

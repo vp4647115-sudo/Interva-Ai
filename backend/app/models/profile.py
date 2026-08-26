@@ -6,7 +6,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, String, func
+from sqlalchemy import JSON, DateTime, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -26,6 +26,17 @@ class CandidateProfile(Base):
     full_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     consent_terms: Mapped[bool] = mapped_column(default=False)
     consent_analytics: Mapped[bool] = mapped_column(default=False)
+
+    # One-time onboarding state — the database is the source of truth; the
+    # frontend only reads these flags (never writes them).
+    onboarding_completed: Mapped[bool] = mapped_column(default=False, index=True)
+    onboarding_completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    onboarding_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # email/address/certificate snapshot
+
+    # Welcome email bookkeeping — set only after SMTP accepts the message.
+    welcome_email_sent: Mapped[bool] = mapped_column(default=False)
+    welcome_email_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    welcome_email_claimed: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

@@ -1,0 +1,81 @@
+﻿"""Job search endpoints. POST /api/jobs/search proxies Theirstack server-side."""
+from __future__ import annotations
+
+from typing import Any
+
+from fastapi import APIRouter, HTTPException, Request, status
+from pydantic import BaseModel, Field
+
+from ..core.dependencies import CurrentUser
+from ..services import job_cache
+from ..services.job_normalizer import normalize_jobs
+from ..services.theirstack_client import (
+    JobProviderError,
+    JobProviderRateLimited,
+    build_theirstack_payload,
+    fetch_theirstack_jobs,
+)
+
+router = APIRouter(prefix="/api/jobs", tags=["jobs"])
+
+# Simple per-user sliding-window rate limit (rule.md: protect external APIs).
+_RATE_LIMIT = 30
+_RATE_WINDOW_SECONDS = 60
+_user_hits: dict[str, list[float]] = {}
+
+
+def _check_rate_limit(user_id: str) -> None:
+    import time
+
+    now = time.monotonic()
+    hits = [t for t in _user_hits.get(user_id, []) if now - t < _RATE_WINDOW_SECONDS]
+    if len(hits) >= _RATE_LIMIT:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Too many searches. Please wait a moment.")
+    hits.append(now)
+    _user_hits[user_id] = hits
+
+
+class JobSearchFilters(BaseModel):
+    query: str = Field(default="", max_length=200)
+    location: str = Field(default="", max_length=200)
+    remote: str | None = Field(default=None, pattern="^(remote|on-site|hybrid)$")
+    jobType: str = Field(default="", max_length=60)
+    experienceLevel: str = Field(default="", max_length=60)
+    company: str = Field(default="", max_length=120)
+    page: int = Field(default=1, ge=1, le=100)
+    limit: int = Field(default=20, ge=5, le=25)
+
+
+@router.post("/search")
+async def search_jobs(filters: JobSearchFilters, user: CurrentUser) -> dict[str, Any]:
+    """Search real-time jobs via Theirstack. Requires authentication."""
+    _check_rate_limit(user["id"])
+
+    filter_dict = filters.model_dump()
+    key = job_cache.cache_key({**filter_dict, "uid": user["id"]})
+    cached = job_cache.get_cached(key)
+    if cached is not None:
+        return cached
+
+    payload = build_theirstack_payload(filter_dict)
+    try:
+        raw = await fetch_theirstack_jobs(payload)
+    except JobProviderRateLimited as exc:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc)) from exc
+    except JobProviderError as exc:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
+
+    jobs = normalize_jobs(raw.get("data"))
+    total = int(raw.get("total") or raw.get("total_results") or len(jobs) or 0)
+
+    response = {
+        "success": True,
+        "jobs": jobs,
+        "pagination": {
+            "page": payload["page"],
+            "limit": payload["limit"],
+            "total": total,
+        },
+    }
+    job_cache.set_cached(key, response)
+    return response

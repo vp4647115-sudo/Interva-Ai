@@ -12,6 +12,10 @@ class UserOut(BaseModel):
     email: EmailStr
     full_name: str | None = None
     email_verified: bool = False
+    # Backend/database-owned onboarding state — the frontend uses this to
+    # route to /onboarding or /dashboard after login. Never client-writable.
+    onboarding_completed: bool = False
+    welcome_email_sent: bool = False
 
 
 class MessageResponse(BaseModel):

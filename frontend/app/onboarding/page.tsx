@@ -2,8 +2,9 @@
 
 export const dynamic = "force-dynamic";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { onAuthStateChanged, type User } from "firebase/auth";
 import {
   apiClient,
   EducationEntry,
@@ -13,6 +14,10 @@ import {
   WizardState,
 } from "@/services/api";
 import { ErrorState, Skeleton } from "@/components/ui/States";
+import { firebaseAuth } from "@/lib/firebase/auth";
+import { searchSkills } from "@/components/resume/SkillPicker";
+import TaxonomyInput from "@/components/ui/TaxonomyInput";
+import { COMPANY_TAXONOMY, JOB_TITLE_TAXONOMY } from "@/lib/skills/companies";
 
 const STEPS = ["profile", "education", "experience", "skills", "preferences"] as const;
 type Step = (typeof STEPS)[number];
@@ -49,10 +54,32 @@ export default function OnboardingPage() {
 
   // Entry forms
   const [eduForm, setEduForm] = useState({ school: "", degree: "", field_of_study: "" });
-  const [expForm, setExpForm] = useState({ company: "", title: "", description: "" });
+  const [expForm, setExpForm] = useState({ company: "", title: "", description: "", years: "" });
   const [skillForm, setSkillForm] = useState({ name: "", level: 3 });
+  const [skillListOpen, setSkillListOpen] = useState(false);
+
+  const skillSuggestions = useMemo(
+    () =>
+      searchSkills(skillForm.name).filter(
+        (s) => !skills.some((k) => k.name.toLowerCase() === s.toLowerCase())
+      ),
+    [skillForm.name, skills]
+  );
+
+  // Wait for Firebase to restore the session before calling the API —
+  // otherwise the first request fires with no bearer token and 401s.
+  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+
+  useEffect(() => {
+    return onAuthStateChanged(firebaseAuth, (user) => {
+      setAuthUser(user);
+      setAuthReady(true);
+    });
+  }, []);
 
   const load = useCallback(async () => {
+    if (!authUser) return;
     try {
       const wizard = await apiClient.getWizardState();
       setState(wizard);
@@ -69,14 +96,25 @@ export default function OnboardingPage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load onboarding.");
     }
-  }, []);
+  }, [authUser]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (authReady && authUser) void load();
+  }, [authReady, authUser, load]);
+
+  // Signed out (or session not restored) — send to login instead of 401-ing.
+  useEffect(() => {
+    if (authReady && !authUser) router.replace("/auth/login");
+  }, [authReady, authUser, router]);
+
+  // Onboarding is one-time only: a user who already finished the wizard
+  // (e.g. bookmarked /onboarding) goes straight to their dashboard.
+  useEffect(() => {
+    if (state?.finished) router.replace("/dashboard");
+  }, [state, router]);
 
   if (error) return <ErrorState message={error} onRetry={() => void load()} />;
-  if (!state) {
+  if (!authReady || !authUser || !state) {
     return (
       <main className="mx-auto max-w-3xl p-8">
         <Skeleton className="h-10 w-64" />
@@ -234,7 +272,15 @@ export default function OnboardingPage() {
             <ul className="mt-4 space-y-2">
               {experience.map((e) => (
                 <li key={e.id} className="flex items-center justify-between rounded-xl border border-border p-3">
-                  <span className="text-sm"><strong>{e.title}</strong> at {e.company}</span>
+                  <span className="text-sm">
+                    <strong>{e.title}</strong> at {e.company}
+                    {e.years != null && (
+                      <span className="ml-2 rounded-pill bg-primary-soft px-2 py-0.5 text-xs font-bold text-primary">
+                        {e.years} {e.years === 1 ? "yr" : "yrs"}
+                      </span>
+                    )}
+                    {e.description && <span className="block text-xs text-ink-secondary">{e.description}</span>}
+                  </span>
                   <button className="text-sm font-semibold text-error"
                     onClick={() => void apiClient.deleteExperience(e.id).then(load)}>
                     Remove
@@ -243,11 +289,35 @@ export default function OnboardingPage() {
               ))}
             </ul>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <input className={inputCls} placeholder="Company" value={expForm.company}
-                onChange={(e) => setExpForm({ ...expForm, company: e.target.value })} />
-              <input className={inputCls} placeholder="Job title" value={expForm.title}
-                onChange={(e) => setExpForm({ ...expForm, title: e.target.value })} />
-              <textarea className={`${inputCls} sm:col-span-2`} rows={2} placeholder="What did you do?"
+              <TaxonomyInput
+                id="expCompany"
+                className={inputCls}
+                placeholder="Company — try “goo”, “ama”…"
+                ariaLabel="Company"
+                value={expForm.company}
+                options={COMPANY_TAXONOMY}
+                onChange={(company) => setExpForm({ ...expForm, company })}
+              />
+              <TaxonomyInput
+                id="expTitle"
+                className={inputCls}
+                placeholder="Job title — try “soft”, “data”…"
+                ariaLabel="Job title"
+                value={expForm.title}
+                options={JOB_TITLE_TAXONOMY}
+                onChange={(title) => setExpForm({ ...expForm, title })}
+              />
+              <div>
+                <input
+                  className={inputCls}
+                  placeholder="Years worked (e.g. 2)"
+                  aria-label="Years worked"
+                  inputMode="numeric"
+                  value={expForm.years}
+                  onChange={(e) => setExpForm({ ...expForm, years: e.target.value.replace(/[^0-9.]/g, "") })}
+                />
+              </div>
+              <textarea className={`${inputCls} sm:col-span-2`} rows={2} placeholder="What did you do there?"
                 value={expForm.description}
                 onChange={(e) => setExpForm({ ...expForm, description: e.target.value })} />
             </div>
@@ -256,8 +326,15 @@ export default function OnboardingPage() {
                 disabled={!expForm.company || !expForm.title || saving}
                 onClick={() =>
                   void apiClient
-                    .addExperience({ company: expForm.company, title: expForm.title, description: expForm.description || null, start_date: null, end_date: null })
-                    .then(() => { setExpForm({ company: "", title: "", description: "" }); return load(); })
+                    .addExperience({
+                      company: expForm.company,
+                      title: expForm.title,
+                      description: expForm.description || null,
+                      start_date: null,
+                      end_date: null,
+                      years: expForm.years === "" ? null : Number(expForm.years),
+                    })
+                    .then(() => { setExpForm({ company: "", title: "", description: "", years: "" }); return load(); })
                 }
                 className="rounded-pill border border-primary px-5 py-2 text-sm font-bold text-primary disabled:opacity-40">
                 Add experience
@@ -284,10 +361,48 @@ export default function OnboardingPage() {
               ))}
             </ul>
             <div className="mt-4 flex flex-wrap items-end gap-3">
-              <div>
+              <div className="relative">
                 <label className={labelCls} htmlFor="skillName">Skill</label>
-                <input id="skillName" className={inputCls} placeholder="e.g. Python" value={skillForm.name}
-                  onChange={(e) => setSkillForm({ ...skillForm, name: e.target.value })} />
+                <input
+                  id="skillName"
+                  className={inputCls}
+                  placeholder="e.g. Python"
+                  value={skillForm.name}
+                  autoComplete="off"
+                  role="combobox"
+                  aria-expanded={skillListOpen && skillSuggestions.length > 0}
+                  aria-controls="skill-suggestions"
+                  onChange={(e) => { setSkillForm({ ...skillForm, name: e.target.value }); setSkillListOpen(true); }}
+                  onFocus={() => setSkillListOpen(true)}
+                  onBlur={() => setTimeout(() => setSkillListOpen(false), 150)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && skillSuggestions.length > 0) {
+                      e.preventDefault();
+                      setSkillForm({ ...skillForm, name: skillSuggestions[0] });
+                      setSkillListOpen(false);
+                    }
+                  }}
+                />
+                {skillListOpen && skillForm.name.trim() !== "" && skillSuggestions.length > 0 && (
+                  <ul
+                    id="skill-suggestions"
+                    role="listbox"
+                    className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-border bg-white shadow-card"
+                  >
+                    {skillSuggestions.map((s) => (
+                      <li key={s} role="option" aria-selected={false}>
+                        <button
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => { setSkillForm({ ...skillForm, name: s }); setSkillListOpen(false); }}
+                          className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm hover:bg-primary-soft"
+                        >
+                          {s}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
               <div>
                 <label className={labelCls} htmlFor="skillLevel">Level (1–5)</label>

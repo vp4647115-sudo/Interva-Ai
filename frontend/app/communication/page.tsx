@@ -15,6 +15,7 @@ function CoachPage() {
   const [modes, setModes] = useState<CommMode[]>([]);
   const [skill, setSkill] = useState("clarity");
   const [mode, setMode] = useState("free");
+  const [sessionStarted, setSessionStarted] = useState(false);
   const [consented, setConsented] = useState(false);
   const [showConsent, setShowConsent] = useState(false);
   const [transcript, setTranscript] = useState("");
@@ -44,6 +45,7 @@ function CoachPage() {
   }, [speech.listening]);
 
   const beginSession = useCallback(() => {
+    setSessionStarted(true);
     setResult(null);
     setError(null);
     setTranscript("");
@@ -54,6 +56,20 @@ function CoachPage() {
   const startWithConsent = () => {
     if (!consented) { setShowConsent(true); return; }
     beginSession();
+  };
+
+  const changeSkill = (nextSkill: string) => {
+    if (speech.listening) return;
+    setSkill(nextSkill);
+    setSessionStarted(false);
+    setResult(null);
+  };
+
+  const changeMode = (nextMode: string) => {
+    if (speech.listening) return;
+    setMode(nextMode);
+    setSessionStarted(false);
+    setResult(null);
   };
 
   const acceptConsent = () => {
@@ -110,7 +126,7 @@ function CoachPage() {
                 <h2 className="text-xs font-extrabold uppercase tracking-wider text-ink-secondary">Training skill</h2>
                 <div className="mt-3 space-y-1.5">
                   {skills.map((s) => (
-                    <button key={s.id} type="button" onClick={() => { setSkill(s.id); setResult(null); }}
+                    <button key={s.id} type="button" onClick={() => changeSkill(s.id)} disabled={speech.listening}
                       className={`w-full rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${skill === s.id ? "bg-primary-soft text-primary" : "text-ink-secondary hover:bg-surface-alt"}`}>
                       {s.name} <span className="ml-1 text-[10px] font-semibold text-ink-muted">{s.category}</span>
                     </button>
@@ -121,7 +137,7 @@ function CoachPage() {
                 <h2 className="text-xs font-extrabold uppercase tracking-wider text-ink-secondary">Session mode</h2>
                 <div className="mt-3 space-y-1.5">
                   {modes.map((m) => (
-                    <button key={m.id} type="button" onClick={() => { setMode(m.id); setResult(null); }}
+                    <button key={m.id} type="button" onClick={() => changeMode(m.id)} disabled={speech.listening}
                       className={`w-full rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${mode === m.id ? "bg-primary-soft text-primary" : "text-ink-secondary hover:bg-surface-alt"}`}>
                       {m.name}
                     </button>
@@ -146,15 +162,25 @@ function CoachPage() {
                 </div>
               </div>
 
-              <div className="mt-5 min-h-32 rounded-card bg-surface-alt p-4">
+              {!sessionStarted ? (
+                <div className="mt-5 rounded-card border border-primary/20 bg-primary-soft/40 p-6">
+                  <p className="text-xs font-extrabold uppercase tracking-wider text-primary">Session setup</p>
+                  <p className="mt-2 text-sm leading-6 text-ink-secondary">
+                    You are preparing a <strong className="text-ink-primary">{activeSkill?.name ?? "communication"}</strong> session in <strong className="text-ink-primary">{modes.find((m) => m.id === mode)?.name ?? "free conversation"}</strong> mode.
+                  </p>
+                  <button type="button" onClick={startWithConsent} className="mt-5 inline-flex items-center gap-2 rounded-pill bg-primary px-6 py-3 text-sm font-extrabold text-white shadow-[0_3px_0_#4b31d1] hover:bg-primary-hover">
+                    <Mic className="h-4 w-4" /> Start Session
+                  </button>
+                </div>
+              ) : <div className="mt-5 min-h-32 rounded-card bg-surface-alt p-4">
                 <p className="text-xs font-extrabold uppercase tracking-wider text-ink-muted">Live transcript</p>
                 <p className="mt-2 text-sm leading-7 text-ink-primary">
                   {transcript || <span className="text-ink-muted">Your spoken words appear here…</span>}
                   {speech.interim && <span className="text-ink-muted"> {speech.interim}</span>}
                 </p>
-              </div>
+              </div>}
 
-              <div className="mt-5 flex flex-wrap gap-3">
+              {sessionStarted && <div className="mt-5 flex flex-wrap gap-3">
                 {!speech.listening ? (
                   <button type="button" onClick={startWithConsent} className="inline-flex items-center gap-2 rounded-pill bg-primary px-6 py-3 text-sm font-extrabold text-white shadow-[0_3px_0_#4b31d1] hover:bg-primary-hover">
                     <Mic className="h-4 w-4" /> Start Speaking
@@ -167,11 +193,11 @@ function CoachPage() {
                 {transcript && !speech.listening && (
                   <button type="button" onClick={() => { setTranscript(""); setDuration(0); setResult(null); }} className="rounded-pill border border-border px-5 py-3 text-sm font-bold text-ink-secondary hover:border-primary hover:text-primary">Reset</button>
                 )}
-              </div>
+              </div>}
 
-              {speech.error && <p className="mt-4 text-sm text-error" role="alert">{speech.error}</p>}
-              {!speech.supported && <p className="mt-4 text-sm text-warning">Speech recognition needs Chrome or Edge. Your transcript can also be typed manually below.</p>}
-              {!speech.supported && (
+              {sessionStarted && speech.error && <p className="mt-4 text-sm text-error" role="alert">{speech.error}</p>}
+              {sessionStarted && !speech.supported && <p className="mt-4 text-sm text-warning">Speech recognition needs Chrome or Edge. Your transcript can also be typed manually below.</p>}
+              {sessionStarted && !speech.supported && (
                 <textarea value={transcript} onChange={(e) => setTranscript(e.target.value)} placeholder="Type what you would say…" className="mt-3 min-h-24 w-full rounded-input border border-border bg-surface-alt px-3.5 py-3 text-sm" />
               )}
             </section>
@@ -232,11 +258,11 @@ function CoachPage() {
                 <div className="rounded-card border border-border bg-white p-6 shadow-card">
                   <h3 className="font-extrabold text-ink-primary">How it works</h3>
                   <ol className="mt-3 space-y-2 text-sm leading-6 text-ink-secondary">
-                    <li>1. Pick a skill and session mode.</li>
-                    <li>2. Allow microphone access when prompted.</li>
-                    <li>3. Speak your response.</li>
-                    <li>4. Stop — Gemini analyzes and coaches you.</li>
-                    <li>5. Retry and watch your score improve.</li>
+                    <li>1. Choose a training option.</li>
+                    <li>2. Choose a session mode.</li>
+                    <li>3. Start the session and respond naturally.</li>
+                    <li>4. Stop when ready for evidence-based feedback.</li>
+                    <li>5. Practice again and track your progress.</li>
                   </ol>
                   <Link href="/communication/progress" className="mt-4 block text-sm font-extrabold text-primary hover:underline">View your progress →</Link>
                 </div>

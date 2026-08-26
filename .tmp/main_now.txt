@@ -1,0 +1,33 @@
+﻿"""FastAPI application entrypoint. Modular monolith â€” one service (rule.md Â§1)."""
+from __future__ import annotations
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from .api.admin_questions import router as admin_questions_router
+from .api.auth import router as auth_router
+from .api.crud import router as crud_router
+from .api.onboarding import router as onboarding_router
+from .core.config import get_settings
+
+settings = get_settings()
+
+app = FastAPI(title=settings.app_name, version="0.1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[settings.frontend_origin],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["Authorization", "Content-Type"],
+)
+
+app.include_router(auth_router)
+app.include_router(onboarding_router)
+app.include_router(crud_router)
+app.include_router(admin_questions_router)
+
+
+@app.get("/health")
+async def health() -> dict[str, str]:
+    return {"status": "ok"}

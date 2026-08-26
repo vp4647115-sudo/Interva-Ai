@@ -5,18 +5,26 @@ Endpoints (all under /api/onboarding):
 - GET  /state            — resumable wizard state
 - PUT  /state            — save current step progress
 - POST /finish           — mark wizard finished
+- GET  /status           — backend-owned onboardingCompleted flag (source of truth)
+- POST /complete         — one-time completion: validate contact data, persist,
+                           set onboardingCompleted, send welcome email exactly once
 - CRUD for education / experience / skills, GET+PUT preferences
 - GET  /completion       — weighted profile completion percentage
 - GET  /dashboard        — aggregate stats for the personalized dashboard
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func, select
+import logging
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.dependencies import CurrentUser
-from ..db.session import get_db
+from ..core.email_service import dispatch_welcome_email
+from ..core.storage import StorageError, upload_user_file, validate_file
+from ..db.session import SessionLocal, get_db
 from ..models.onboarding import (
     CareerPreference,
     Education,
@@ -24,6 +32,7 @@ from ..models.onboarding import (
     OnboardingState,
     Skill,
 )
+from ..models.profile import CandidateProfile
 from ..schemas.onboarding import (
     CompletionOut,
     DashboardOut,
@@ -31,12 +40,17 @@ from ..schemas.onboarding import (
     EducationOut,
     ExperienceIn,
     ExperienceOut,
+    OnboardingCompleteIn,
+    OnboardingCompleteOut,
+    OnboardingStatusOut,
     PreferencesIn,
     SkillIn,
     SkillOut,
     WizardStateIn,
     WizardStateOut,
 )
+
+logger = logging.getLogger("interviai.onboarding")
 
 router = APIRouter(prefix="/api/onboarding", tags=["onboarding"])
 
@@ -50,6 +64,10 @@ async def _get_state(db: AsyncSession, user_id: str) -> OnboardingState:
         state = OnboardingState(user_id=user_id)
         db.add(state)
         await db.commit()
+        # commit() expires the instance; refresh so later attribute access
+        # (e.g. state.updated_at) doesn't trigger a sync lazy load and raise
+        # MissingGreenlet in the async session.
+        await db.refresh(state)
     return state
 
 
@@ -79,6 +97,7 @@ async def put_state(
     state.current_step = payload.current_step
     state.finished = payload.finished
     await db.commit()
+    await db.refresh(state)  # commit() expires the instance; reload before access
     return WizardStateOut(
         completed_steps=payload.completed_steps,
         current_step=payload.current_step,
@@ -94,12 +113,200 @@ async def finish(user: CurrentUser, db: AsyncSession = Depends(get_db)) -> Wizar
     if "preferences" not in _split(state.completed_steps):
         state.completed_steps = ",".join([*_split(state.completed_steps), "preferences"])
     await db.commit()
+    await db.refresh(state)  # commit() expires the instance; reload before access
+
+    # Preserve the existing frontend contract: older clients call /finish
+    # without the newer contact payload. Complete the account from the
+    # verified identity so their database state and redirect remain correct;
+    # newer clients should use /complete to include address/certificate data.
+    profile = await _get_profile(db, user["id"])
+    if profile and not profile.onboarding_completed:
+        profile.onboarding_data = {"email": user["email"], "address": None, "certificateNumber": None}
+        profile.onboarding_completed = True
+        profile.onboarding_completed_at = datetime.now(timezone.utc)
+        await db.commit()
+    if profile and not profile.welcome_email_sent and not profile.welcome_email_claimed:
+        claim = await db.execute(
+            update(CandidateProfile)
+            .where(
+                CandidateProfile.supabase_user_id == user["id"],
+                CandidateProfile.welcome_email_sent.is_(False),
+                CandidateProfile.welcome_email_claimed.is_(False),
+            )
+            .values(welcome_email_claimed=True)
+        )
+        await db.commit()
+        if claim.rowcount == 1:
+            dispatch_welcome_email(
+                to_email=user["email"],
+                user_name=profile.full_name or user["claims"].get("name"),
+                on_result=lambda ok: _mark_email_result(user["id"], ok),
+            )
     return WizardStateOut(
         completed_steps=_split(state.completed_steps),
         current_step=state.current_step,
         finished=True,
         updated_at=state.updated_at,
     )
+
+
+# --- One-time completion & backend-owned status ------------------------------
+
+
+async def _get_profile(db: AsyncSession, user_id: str) -> CandidateProfile | None:
+    return await db.scalar(
+        select(CandidateProfile).where(CandidateProfile.supabase_user_id == user_id)
+    )
+
+
+@router.get("/status", response_model=OnboardingStatusOut)
+async def get_status(user: CurrentUser, db: AsyncSession = Depends(get_db)) -> OnboardingStatusOut:
+    """Backend/database is the source of truth for onboarding state.
+    The frontend calls this after login to decide dashboard vs onboarding."""
+    profile = await _get_profile(db, user["id"])
+    if not profile:
+        # No profile row yet (sync never ran) → onboarding pending.
+        return OnboardingStatusOut(
+            onboarding_completed=False,
+            welcome_email_sent=False,
+            welcome_email_claimed=False,
+            onboarding_completed_at=None,
+        )
+    return OnboardingStatusOut(
+        onboarding_completed=profile.onboarding_completed,
+        welcome_email_sent=profile.welcome_email_sent,
+        welcome_email_claimed=profile.welcome_email_claimed,
+        onboarding_completed_at=profile.onboarding_completed_at,
+    )
+
+
+def _mark_email_result(uid: str, success: bool) -> None:
+    """Runs in the email worker thread AFTER the provider accepted/rejected the
+    message. Only a confirmed send flips `welcome_email_sent` (Phase 6/10):
+    failures leave it False so a later login can safely retry — exactly once."""
+
+    async def _update() -> None:
+        async with SessionLocal() as db:
+            profile = await _get_profile(db, uid)
+            if profile:
+                profile.welcome_email_claimed = False
+                if success and not profile.welcome_email_sent:
+                    profile.welcome_email_sent = True
+                    profile.welcome_email_sent_at = datetime.now(timezone.utc)
+                await db.commit()
+
+    import asyncio
+
+    try:
+        asyncio.run(_update())
+    except Exception:  # noqa: BLE001 — never crash the worker thread
+        logger.exception("Failed to persist welcome-email result for %s", uid)
+
+
+@router.post("/complete", response_model=OnboardingCompleteOut)
+async def complete_onboarding(
+    payload: OnboardingCompleteIn,
+    user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+) -> OnboardingCompleteOut:
+    """One-time onboarding completion (Phases 4, 6, 9, 10).
+
+    Idempotency contract:
+    - If `onboarding_completed` is already True, this returns the current
+      state WITHOUT re-saving data or re-sending the email — duplicate or
+      double-clicked submissions are harmless no-ops.
+    - The welcome email fires only when `welcome_email_sent` is False; the
+      flag is set only after SMTP accepts the message. A failed send keeps
+      onboarding complete and leaves the email retryable.
+    """
+    profile = await _get_profile(db, user["id"])
+    if not profile:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Profile not initialized. Please log in again.",
+        )
+
+    verified_email = (user.get("email") or "").strip().lower()
+    if not profile.onboarding_completed:
+        # Defense-in-depth: the collected contact email must match the
+        # verified Firebase identity. We never mail a third-party address.
+        if payload.email.strip().lower() != verified_email:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                "The provided email does not match your account's verified email.",
+            )
+        if payload.certificate_storage_key and not payload.certificate_storage_key.startswith(
+            f"users/{user['id']}/"
+        ):
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Certificate attachment is not yours.")
+
+        profile.onboarding_data = {
+            "email": payload.email,
+            "address": payload.address,
+            "certificateNumber": payload.certificate_number,
+            "certificateStorageKey": payload.certificate_storage_key,
+        }
+        profile.onboarding_completed = True
+        profile.onboarding_completed_at = datetime.now(timezone.utc)
+        await db.commit()  # onboarding persists even if the email later fails
+        await db.refresh(profile)
+
+    email_accepted = False
+    claim = await db.execute(
+        update(CandidateProfile)
+        .where(
+            CandidateProfile.supabase_user_id == user["id"],
+            CandidateProfile.welcome_email_sent.is_(False),
+            CandidateProfile.welcome_email_claimed.is_(False),
+        )
+        .values(welcome_email_claimed=True)
+    )
+    await db.commit()
+    if claim.rowcount == 1:
+        dispatch_welcome_email(
+            to_email=verified_email,  # authenticated user's registered email only
+            user_name=profile.full_name or user["claims"].get("name"),
+            on_result=lambda ok: _mark_email_result(user["id"], ok),
+        )
+        # We cannot block the response for up to 30s of SMTP latency; the
+        # worker thread flips the flag on confirmation. If SMTP fails here,
+        # onboarding stays complete and the next login retries the email.
+        email_accepted = False
+    else:
+        email_accepted = True
+
+    return OnboardingCompleteOut(
+        onboarding_completed=True,
+        welcome_email_sent=profile.welcome_email_sent,
+        onboarding_completed_at=profile.onboarding_completed_at,
+        email_sent_accepted=email_accepted,
+        welcome_email_claimed=profile.welcome_email_claimed,
+    )
+
+
+CERTIFICATE_TYPES = {
+    "application/pdf": ".pdf",
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+}
+
+
+@router.post("/certificate")
+async def upload_certificate(
+    file: UploadFile = File(...), user: CurrentUser = None
+) -> dict[str, str]:
+    """Upload a certificate attachment for the authenticated user."""
+    contents = await file.read()
+    try:
+        extension = validate_file(file.content_type or "", len(contents), CERTIFICATE_TYPES)
+        storage_key = upload_user_file(
+            user["id"], contents, file.content_type or "", folder="certificates", extension=extension
+        )
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    except StorageError as exc:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Certificate upload failed.") from exc
+    return {"storageKey": storage_key}
 
 
 # --- Education ---------------------------------------------------------------
@@ -133,6 +340,7 @@ async def add_education(
     row = Education(user_id=user["id"], **payload.model_dump())
     db.add(row)
     await db.commit()
+    await db.refresh(row)  # commit() expires the instance; reload before access
     return EducationOut(id=str(row.id), **payload.model_dump())
 
 
@@ -182,6 +390,7 @@ async def list_experience(user: CurrentUser, db: AsyncSession = Depends(get_db))
             company=r.company,
             title=r.title,
             description=r.description,
+            years=r.years,
             start_date=r.start_date,
             end_date=r.end_date,
             created_at=r.created_at,
@@ -197,6 +406,7 @@ async def add_experience(
     row = Experience(user_id=user["id"], **payload.model_dump())
     db.add(row)
     await db.commit()
+    await db.refresh(row)  # commit() expires the instance; reload before access
     return ExperienceOut(id=str(row.id), **payload.model_dump())
 
 
@@ -251,6 +461,7 @@ async def add_skill(payload: SkillIn, user: CurrentUser, db: AsyncSession = Depe
     row = Skill(user_id=user["id"], name=payload.name.strip(), level=payload.level)
     db.add(row)
     await db.commit()
+    await db.refresh(row)  # commit() expires the instance; reload before access
     return SkillOut(id=str(row.id), name=row.name, level=row.level)
 
 
