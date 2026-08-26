@@ -9,6 +9,34 @@ import { communicationApi, scoreLabel, type CommAnalysis, type CommMode, type Co
 import { useSpeechRecognition } from "@/lib/speech/useSpeechRecognition";
 
 const CONSENT_KEY = "intervai-comm-consent";
+const STARTER_QUESTIONS = [
+  "Tell me about yourself.",
+  "What project are you most proud of?",
+  "Why are you interested in this role?",
+];
+
+async function speakQuestion(text: string) {
+  try {
+    const { getIdToken } = await import("@/lib/firebase/auth");
+    const token = await getIdToken();
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/communication/voice`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ text }),
+    });
+    if (response.ok) {
+      const audio = new Audio(URL.createObjectURL(await response.blob()));
+      await audio.play();
+      return;
+    }
+  } catch {
+    // Browser speech is the local fallback when ElevenLabs is not configured.
+  }
+  if (typeof window !== "undefined" && "speechSynthesis" in window) {
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+  }
+}
 
 function CoachPage() {
   const [skills, setSkills] = useState<CommSkill[]>([]);
@@ -23,6 +51,7 @@ function CoachPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState<CommAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [question, setQuestion] = useState(STARTER_QUESTIONS[0]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const speech = useSpeechRecognition((text) => setTranscript((t) => `${t} ${text}`.trim()));
@@ -50,8 +79,9 @@ function CoachPage() {
     setError(null);
     setTranscript("");
     setDuration(0);
+    void speakQuestion(question);
     speech.start();
-  }, [speech]);
+  }, [question, speech]);
 
   const startWithConsent = () => {
     if (!consented) { setShowConsent(true); return; }
@@ -70,6 +100,17 @@ function CoachPage() {
     setMode(nextMode);
     setSessionStarted(false);
     setResult(null);
+  };
+
+  const retryWithFeedback = () => {
+    const nextQuestion = result?.nextQuestion || question;
+    setQuestion(nextQuestion);
+    setResult(null);
+    setTranscript("");
+    setDuration(0);
+    setError(null);
+    void speakQuestion(nextQuestion);
+    speech.start();
   };
 
   const acceptConsent = () => {
@@ -165,6 +206,7 @@ function CoachPage() {
               {!sessionStarted ? (
                 <div className="mt-5 rounded-card border border-primary/20 bg-primary-soft/40 p-6">
                   <p className="text-xs font-extrabold uppercase tracking-wider text-primary">Session setup</p>
+                  <p className="mt-4 text-lg font-extrabold leading-7 text-ink-primary">“{question}”</p>
                   <p className="mt-2 text-sm leading-6 text-ink-secondary">
                     You are preparing a <strong className="text-ink-primary">{activeSkill?.name ?? "communication"}</strong> session in <strong className="text-ink-primary">{modes.find((m) => m.id === mode)?.name ?? "free conversation"}</strong> mode.
                   </p>
@@ -174,6 +216,7 @@ function CoachPage() {
                 </div>
               ) : <div className="mt-5 min-h-32 rounded-card bg-surface-alt p-4">
                 <p className="text-xs font-extrabold uppercase tracking-wider text-ink-muted">Live transcript</p>
+                <p className="mt-2 text-sm font-extrabold text-primary">Question: {question}</p>
                 <p className="mt-2 text-sm leading-7 text-ink-primary">
                   {transcript || <span className="text-ink-muted">Your spoken words appear here…</span>}
                   {speech.interim && <span className="text-ink-muted"> {speech.interim}</span>}
@@ -213,6 +256,22 @@ function CoachPage() {
 
               {result && !analyzing && (
                 <>
+                  {(result.correction || result.betterVersion) && (
+                    <div className="rounded-card border border-primary/30 bg-primary-soft/50 p-5 shadow-card">
+                      <p className="text-xs font-extrabold uppercase tracking-wider text-primary">Coach lesson</p>
+                      {result.correction && <p className="mt-3 text-sm font-extrabold leading-6 text-ink-primary">{result.correction}</p>}
+                      {result.explanation && <p className="mt-2 text-sm leading-6 text-ink-secondary">{result.explanation}</p>}
+                      {result.betterVersion && (
+                        <div className="mt-4 border-l-2 border-primary pl-3">
+                          <p className="text-[11px] font-extrabold uppercase tracking-wider text-ink-muted">Try saying it like this</p>
+                          <p className="mt-1 text-sm italic leading-6 text-ink-primary">“{result.betterVersion}”</p>
+                        </div>
+                      )}
+                      <button type="button" onClick={retryWithFeedback} className="mt-5 inline-flex items-center gap-2 rounded-pill bg-primary px-5 py-2.5 text-sm font-extrabold text-white hover:bg-primary-hover">
+                        Try again <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
                   <div className="rounded-card bg-ink-primary p-6 text-white shadow-card">
                     <p className="text-xs font-extrabold uppercase tracking-wider text-white/60">Your communication score</p>
                     <div className="mt-3 flex items-end gap-2"><span className="text-5xl font-extrabold">{result.overallScore}</span><span className="mb-1 text-sm text-white/60">/ 100</span></div>
@@ -247,7 +306,7 @@ function CoachPage() {
                   <div className="rounded-card border border-border bg-white p-5 shadow-card">
                     <h3 className="text-xs font-extrabold uppercase tracking-wider text-ink-secondary">Next exercise</h3>
                     <p className="mt-2 text-sm leading-6 text-ink-primary">{result.nextExercise.instruction}</p>
-                    <button type="button" onClick={startWithConsent} className="mt-4 inline-flex items-center gap-2 rounded-pill bg-primary px-5 py-2.5 text-sm font-extrabold text-white hover:bg-primary-hover">Try again <ArrowRight className="h-4 w-4" /></button>
+                    <button type="button" onClick={retryWithFeedback} className="mt-4 inline-flex items-center gap-2 rounded-pill bg-primary px-5 py-2.5 text-sm font-extrabold text-white hover:bg-primary-hover">Next question <ArrowRight className="h-4 w-4" /></button>
                   </div>
 
                   <Link href="/communication/progress" className="block rounded-pill border border-border py-3 text-center text-sm font-extrabold text-ink-secondary hover:border-primary hover:text-primary">View progress →</Link>

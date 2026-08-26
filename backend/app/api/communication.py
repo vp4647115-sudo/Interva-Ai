@@ -4,7 +4,8 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
+import httpx
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
@@ -37,6 +38,10 @@ class AnalyzeRequest(BaseModel):
     skill: str = Field(default="clarity", max_length=60)
     mode: str = Field(default="free", max_length=40)
     durationSeconds: int = Field(default=0, ge=0, le=3600)
+
+
+class VoiceRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=500)
 
 
 @router.get("/skills")
@@ -111,6 +116,31 @@ async def analyze_response(payload: AnalyzeRequest, user: CurrentUser, db=Depend
     await db.commit()
 
     return {"success": True, "sessionId": str(session.id), **result, "metrics": metrics}
+
+
+@router.post("/voice")
+async def generate_voice(payload: VoiceRequest, user: CurrentUser) -> Response:
+    """Speak a coach prompt with ElevenLabs when configured."""
+    settings = get_settings()
+    if not settings.elevenlabs_api_key:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "ElevenLabs voice is not configured.")
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{settings.elevenlabs_voice_id}"
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.post(
+                url,
+                headers={"xi-api-key": settings.elevenlabs_api_key, "Accept": "audio/mpeg"},
+                json={
+                    "text": payload.text,
+                    "model_id": "eleven_multilingual_v2",
+                    "voice_settings": {"stability": 0.5, "similarity_boost": 0.75},
+                },
+            )
+    except httpx.HTTPError as exc:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Could not reach ElevenLabs voice service.") from exc
+    if response.status_code != 200:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "ElevenLabs voice generation failed.")
+    return Response(content=response.content, media_type="audio/mpeg")
 
 
 @router.get("/history")

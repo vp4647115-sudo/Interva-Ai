@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     # Theirstack job data (server-only)
     theirstack_api_key: str = ""
 
+    # ElevenLabs voice coach (server-only; browser falls back to speech synthesis)
+    elevenlabs_api_key: str = ""
+    elevenlabs_voice_id: str = "21m00Tcm4TlvDq8ikWAM"
+
     # Outbound email (welcome message after onboarding). The sender identity is
     # ADMIN_EMAIL (falls back to SMTP_USER when unset). For Gmail: create an
     # App Password at https://myaccount.google.com/apppasswords and paste it

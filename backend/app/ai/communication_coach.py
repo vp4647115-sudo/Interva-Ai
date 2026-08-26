@@ -136,6 +136,11 @@ async def analyze_transcript(
         '- "evidence": array of {category, observation, recommendation} objects quoting the transcript\n'
         '- "nextExercise": {skill, instruction} — one concrete retry exercise targeting the weakest skill\n'
         '- "coachMessage": one encouraging, specific sentence of coaching feedback\n'
+        '- "correction": one concise, high-impact correction from the response\n'
+        '- "explanation": a short explanation of why it matters\n'
+        '- "betterVersion": a natural improved version using only the user\'s facts\n'
+        '- "retryPrompt": one sentence asking the user to try again\n'
+        '- "nextQuestion": one relevant follow-up question\n'
         "Do NOT return an overall score — the application computes it from category weights."
     )
 
@@ -173,6 +178,11 @@ async def analyze_transcript(
             "instruction": str(exercise.get("instruction", "Try the response again, focusing on your weakest area."))[:300],
         },
         "coachMessage": str(data.get("coachMessage", ""))[:400],
+        "correction": str(data.get("correction", ""))[:300],
+        "explanation": str(data.get("explanation", ""))[:500],
+        "betterVersion": str(data.get("betterVersion", ""))[:1000],
+        "retryPrompt": str(data.get("retryPrompt", "Try that answer again, using the feedback above."))[:300],
+        "nextQuestion": str(data.get("nextQuestion", "Tell me more about that experience."))[:300],
         "mode": mode,
         "skill": skill_id,
     }

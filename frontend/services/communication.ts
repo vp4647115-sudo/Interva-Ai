@@ -21,6 +21,11 @@ export interface CommAnalysis {
   evidence: { category: string; observation: string; recommendation: string }[];
   nextExercise: { skill: string; instruction: string };
   coachMessage: string;
+  correction: string;
+  explanation: string;
+  betterVersion: string;
+  retryPrompt: string;
+  nextQuestion: string;
   mode: string;
   skill: string;
   metrics: {
