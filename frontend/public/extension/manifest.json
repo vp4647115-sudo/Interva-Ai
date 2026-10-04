@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "IntervAI Buddy",
+  "version": "1.0.0",
+  "description": "Real-time multimodal AI copilot with screen and voice",
+  "permissions": ["tabCapture", "activeTab", "storage", "desktopCapture"],
+  "host_permissions": ["http://localhost:8000/*"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_popup": "popup.html" },
+  "content_scripts": [{ "matches": ["<all_urls>"], "js": ["content.js"] }]
+}

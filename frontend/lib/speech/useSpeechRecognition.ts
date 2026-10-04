@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /** Browser speech recognition hook — provides live transcripts for coaching.
  * Uses the Web Speech API (Chrome/Edge); falls back gracefully elsewhere. */
@@ -22,10 +22,12 @@ export function useSpeechRecognition(onFinal: (text: string) => void) {
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [supported, setSupported] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
-  const supported = typeof window !== "undefined" &&
-    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+  useEffect(() => {
+    setSupported("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+  }, []);
 
   function start() {
     if (!supported) {
@@ -51,6 +53,7 @@ export function useSpeechRecognition(onFinal: (text: string) => void) {
     rec.onerror = (event) => {
       if (event.error === "not-allowed") setError("Microphone permission denied. Allow mic access and try again.");
       else if (event.error === "no-speech") setError(null); // normal pause, not an error
+      else if (event.error === "network") setError("Network error — speech service unavailable. Try again or check connection.");
       else setError(`Speech recognition error: ${event.error}`);
       setListening(false);
     };
