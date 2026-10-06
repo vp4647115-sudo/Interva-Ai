@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {
-  Bot, FileText, Mail, MessagesSquare, Languages, Sparkles, UserRound,
+  Bot, FileText, Mail, MessagesSquare, Languages, Sparkles,
 } from "lucide-react";
 
 const features = [

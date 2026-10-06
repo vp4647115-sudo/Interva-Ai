@@ -1,5 +1,11 @@
 /** @type {import('next').NextConfig} */
+if (process.env.VERCEL && !process.env.NEXT_PUBLIC_API_URL?.startsWith("https://")) {
+  throw new Error("Set NEXT_PUBLIC_API_URL to the deployed HTTPS API origin in Vercel.");
+}
+
 const nextConfig = {
+  outputFileTracingRoot: __dirname,
+
   // Vercel handles image optimization automatically.
   // If you later use next/image with external hosts, add them here.
   images: {
@@ -27,17 +33,6 @@ const nextConfig = {
   // list any non-public server-side env keys you need at build-time here.
   // env: {},
 
-  // Ignore ESLint errors during CI builds so Vercel deploys succeed
-  // even when there are non-critical lint warnings.
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-
-  // Ignore TypeScript errors during build to prevent deploy failures
-  // from non-critical type issues while the codebase is in active development.
-  typescript: {
-    ignoreBuildErrors: true,
-  },
 };
 
 module.exports = nextConfig;

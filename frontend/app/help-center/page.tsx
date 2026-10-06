@@ -67,7 +67,7 @@ export default function HelpCenterPage() {
           </div>
           <section className="mt-10 rounded-2xl bg-primary-soft p-6 sm:p-8">
             <h2 className="text-2xl font-bold text-ink-primary">Still Need Help?</h2>
-            <p className="mt-2 leading-7 text-ink-secondary">Contact the Interview AI team and we'll help you get back to practicing.</p>
+            <p className="mt-2 leading-7 text-ink-secondary">Contact the Interview AI team and we&apos;ll help you get back to practicing.</p>
             <a href="/contact" className="mt-5 inline-flex items-center justify-center rounded-input bg-primary px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-hover">Contact Support</a>
             <p className="mt-4 text-sm text-ink-secondary">Support: <a className="text-primary underline" href="mailto:vp4647115@gmail.com">vp4647115@gmail.com</a></p>
           </section>

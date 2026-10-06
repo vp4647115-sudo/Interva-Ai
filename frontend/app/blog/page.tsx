@@ -61,7 +61,7 @@ export default function BlogPage() {
 
           <section className="mt-12 rounded-2xl border border-border bg-surface-alt p-6 sm:p-8">
             <h2 className="text-2xl font-bold text-ink-primary">Latest From Interview AI</h2>
-            <p className="mt-2 leading-7 text-ink-secondary">We'll publish new articles covering:</p>
+            <p className="mt-2 leading-7 text-ink-secondary">We&apos;ll publish new articles covering:</p>
             <ul className="mt-5 grid list-disc gap-x-8 gap-y-2 pl-5 text-ink-secondary sm:grid-cols-2 lg:grid-cols-3">
               {upcomingTopics.map((topic) => <li key={topic}>{topic}</li>)}
             </ul>

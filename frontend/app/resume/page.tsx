@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight, BrainCircuit, Check, CircleAlert, FileDown, FileUp, Loader2,
@@ -26,7 +26,6 @@ type Generated = {
   grounded: boolean;
 };
 
-const roleOptions = ["Frontend Developer", "Backend Developer", "Full Stack Developer", "Java Developer", "Python Developer", "UI/UX Designer", "Data Analyst", "AI/ML Engineer", "Video Editor"];
 const emptyDraft: ResumeDraft = { name: "", role: "", email: "", phone: "", location: "", linkedin: "", summary: "", degree: "", school: "", skills: [], experience: [], projects: [] };
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 

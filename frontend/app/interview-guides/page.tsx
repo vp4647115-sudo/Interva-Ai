@@ -92,7 +92,7 @@ export default function InterviewGuidesPage() {
           </section>
 
           <section className="mt-10 flex flex-col gap-4 rounded-2xl bg-primary-soft p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
-            <div><h2 className="text-2xl font-bold text-ink-primary">Don't wait until interview day to practice.</h2><p className="mt-2 leading-7 text-ink-secondary">Simulate the experience, practice your answers, and find areas to improve.</p></div>
+            <div><h2 className="text-2xl font-bold text-ink-primary">Don&apos;t wait until interview day to practice.</h2><p className="mt-2 leading-7 text-ink-secondary">Simulate the experience, practice your answers, and find areas to improve.</p></div>
             <a href="/mock-interviews" className="inline-flex shrink-0 items-center justify-center rounded-input bg-primary px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-hover">Start a Mock Interview</a>
           </section>
         </div>

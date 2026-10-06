@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Mic, MicOff, MonitorUp, Send, Sparkles } from "lucide-react";
+import { Loader2, Mic, MicOff, Send, Sparkles } from "lucide-react";
 import Sidebar from "@/components/dashboard/Sidebar";
-import { askBuddy } from "@/services/aiTools";
+import { askBuddy, getMockQuestion } from "@/services/aiTools";
+import { communicationApi, type CommAnalysis } from "@/services/communication";
 import { useSpeechRecognition } from "@/lib/speech/useSpeechRecognition";
 
 type Message = { role: "user" | "assistant"; content: string; tips?: string[] };
@@ -13,33 +14,31 @@ export default function InterviewBuddyPage() {
   const [input, setInput] = useState("");
   const [targetRole, setTargetRole] = useState("");
   const [loading, setLoading] = useState(false);
+  const [generatingQuestion, setGeneratingQuestion] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isBuddyRunning, setIsBuddyRunning] = useState(true);
-  const [screenSharing, setScreenSharing] = useState(false);
-  const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
-  const [screenTranscript, setScreenTranscript] = useState("");
+  const [practiceQuestion, setPracticeQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [durationSeconds, setDurationSeconds] = useState(0);
+  const [analysis, setAnalysis] = useState<CommAnalysis | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const screenVideoRef = useRef<HTMLVideoElement | null>(null);
+  const speechStartedAt = useRef<number | null>(null);
   const { listening, interim, supported, start, stop, error: voiceHookError } = useSpeechRecognition((text) => {
-    setInput((prev) => (prev ? prev + " " + text : text));
-    setScreenTranscript((prev) => (prev ? `${prev}\n${text}` : text));
+    setAnswer((prev) => (prev ? `${prev} ${text}` : text));
   });
 
   useEffect(() => {
-    if (!screenVideoRef.current) return;
-    if (screenStream) {
-      screenVideoRef.current.srcObject = screenStream;
-      void screenVideoRef.current.play().catch(() => undefined);
-      return;
-    }
-    screenVideoRef.current.srcObject = null;
-  }, [screenStream]);
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
 
   useEffect(() => {
-    if (!screenSharing && listening) {
-      stop();
+    if (listening) {
+      speechStartedAt.current = Date.now();
+    } else if (speechStartedAt.current !== null) {
+      setDurationSeconds((previous) => previous + Math.round((Date.now() - speechStartedAt.current!) / 1000));
+      speechStartedAt.current = null;
     }
-  }, [screenSharing, listening, stop]);
+  }, [listening]);
 
   const handleInstallBuddy = () => {
     const link = document.createElement("a");
@@ -49,11 +48,9 @@ export default function InterviewBuddyPage() {
   };
 
   const handleRunBuddy = () => {
-    setIsBuddyRunning(true);
     setTimeout(() => {
       window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-      const inputEl = document.querySelector<HTMLInputElement>('input[aria-label="Ask Interview Buddy"]');
-      inputEl?.focus();
+      document.querySelector<HTMLInputElement>("#practice-question")?.focus();
     }, 50);
   };
 
@@ -65,50 +62,42 @@ export default function InterviewBuddyPage() {
     }
   };
 
-  const toggleScreenShare = async () => {
-    if (!navigator.mediaDevices?.getDisplayMedia) {
-      setError("Screen sharing requires Chrome or Edge.");
-      return;
-    }
-
-    if (screenSharing && screenStream) {
-      screenStream.getTracks().forEach((track) => track.stop());
-      setScreenStream(null);
-      setScreenSharing(false);
-      setScreenTranscript("");
-      stop();
-      return;
-    }
-
+  const analyzeAnswer = async () => {
+    if (!practiceQuestion.trim() || !answer.trim() || analyzing) return;
+    setError(null);
+    setAnalysis(null);
+    setAnalyzing(true);
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { frameRate: 30, cursor: "always" },
-        audio: true,
+      const result = await communicationApi.analyze({
+        transcript: answer.trim(),
+        question: practiceQuestion.trim(),
+        targetRole,
+        skill: "interview-communication",
+        mode: "interview",
+        durationSeconds,
       });
-
-      const videoTrack = stream.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.onended = () => {
-          setScreenStream(null);
-          setScreenSharing(false);
-          setScreenTranscript("");
-          stop();
-        };
-      }
-
-      setScreenStream(stream);
-      setScreenSharing(true);
-      setError(null);
-      setScreenTranscript("Screen share is live. Your transcript will appear here.");
-
-      if (supported) {
-        start();
-      } else {
-        setError("Your browser does not support speech recognition. Try Chrome or Edge.");
-      }
+      setAnalysis(result);
     } catch (caughtError) {
-      const message = caughtError instanceof Error ? caughtError.message : "Unable to share your screen.";
-      setError(message);
+      setError(caughtError instanceof Error ? caughtError.message : "Answer analysis failed.");
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const generatePracticeQuestion = async () => {
+    if (generatingQuestion) return;
+    setError(null);
+    setAnalysis(null);
+    setGeneratingQuestion(true);
+    try {
+      const result = await getMockQuestion({ role: targetRole.trim() || "General", difficulty: "medium", interviewType: "mixed" });
+      setPracticeQuestion(result.question);
+      setAnswer("");
+      setDurationSeconds(0);
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "Could not generate an interview question.");
+    } finally {
+      setGeneratingQuestion(false);
     }
   };
 
@@ -157,52 +146,72 @@ export default function InterviewBuddyPage() {
                 onClick={handleInstallBuddy}
                 className="rounded-full border border-border bg-surface-alt px-4 py-2 text-sm font-semibold text-ink-primary transition hover:border-primary hover:text-primary"
               >
-                Install Buddy
+                Download extension
               </button>
+              <a href="/extension/README.md" target="_blank" rel="noreferrer" className="inline-flex items-center rounded-full border border-border px-4 py-2 text-sm font-semibold text-ink-primary hover:border-primary hover:text-primary">Install guide</a>
             </div>
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
-            <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${isBuddyRunning ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"}`}>
-              <span className={`h-2 w-2 rounded-full ${isBuddyRunning ? "bg-emerald-500" : "bg-slate-500"}`} />
-              {isBuddyRunning ? "Buddy running" : "Buddy paused"}
-            </div>
+            <p className="text-sm text-ink-secondary">Practice reviews use the Interview Communication skill.</p>
             <input value={targetRole} onChange={(e) => setTargetRole(e.target.value)} placeholder="Target role (optional) — e.g. Java Developer" className="w-full max-w-md rounded-input border border-border bg-surface-alt px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15" />
           </div>
 
-          <div className="mt-5 rounded-card border border-border bg-white p-4 shadow-card">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <section id="practice" className="mt-5 rounded-card border border-border bg-white p-4 shadow-card">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-primary">Screen mode</p>
-                <h2 className="mt-1 text-lg font-extrabold text-ink-primary">Share my screen</h2>
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-primary">Interview practice</p>
+                <h2 className="mt-1 text-lg font-extrabold text-ink-primary">Answer, review, retry</h2>
               </div>
-              <button
-                type="button"
-                onClick={() => void toggleScreenShare()}
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${screenSharing ? "bg-red-500 text-white" : "bg-primary text-white"}`}
-              >
-                <MonitorUp className="h-4 w-4" />
-                {screenSharing ? "Stop sharing" : "Share my screen"}
+              <button type="button" onClick={toggleVoice} disabled={!supported} className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white ${listening ? "bg-red-500" : "bg-ink-secondary"}`}>
+                {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                {listening ? "Stop dictation" : "Dictate answer"}
               </button>
             </div>
-
-            <div className="mt-4 grid gap-4 md:grid-cols-[1.3fr_0.7fr]">
-              <div className="flex min-h-[190px] items-center justify-center overflow-hidden rounded-card border border-border bg-slate-50">
-                {screenSharing && screenStream ? (
-                  <video ref={screenVideoRef} autoPlay muted playsInline className="h-full w-full object-cover" />
-                ) : (
-                  <p className="max-w-xs text-center text-sm text-ink-secondary">Enable screen share to let Interview Buddy view your screen and transcribe your responses.</p>
-                )}
-              </div>
-
-              <div className="rounded-card border border-border bg-surface-alt p-3">
-                <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-ink-secondary">Live transcript</p>
-                <div className="mt-3 min-h-[150px] whitespace-pre-line text-sm leading-6 text-ink-primary">
-                  {screenTranscript || (screenSharing ? "Listening for your answer…" : "Transcript will appear here when screen share is active.")}
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+              <label htmlFor="practice-question" className="text-sm font-semibold text-ink-primary">Interview question</label>
+              <button type="button" onClick={() => void generatePracticeQuestion()} disabled={generatingQuestion} className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-2 text-xs font-semibold text-ink-primary disabled:opacity-50">
+                {generatingQuestion && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                {generatingQuestion ? "Generating" : "Generate question"}
+              </button>
+            </div>
+            <input id="practice-question" value={practiceQuestion} onChange={(event) => { setPracticeQuestion(event.target.value); setAnalysis(null); }} placeholder="Paste a question or practice a generated one" className="mt-2 w-full rounded-input border border-border bg-surface-alt px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15" />
+            <label htmlFor="practice-answer" className="mt-4 block text-sm font-semibold text-ink-primary">Your answer</label>
+            <textarea id="practice-answer" value={answer} onChange={(event) => { setAnswer(event.target.value); setAnalysis(null); }} rows={5} placeholder="Type or dictate your response..." className="mt-2 w-full resize-y rounded-input border border-border bg-surface-alt px-3.5 py-2.5 text-sm leading-6 outline-none focus:border-primary focus:ring-2 focus:ring-primary/15" />
+            {interim && <p className="mt-2 text-xs text-ink-secondary">Listening: {interim}</p>}
+            {voiceHookError && <p role="alert" className="mt-2 text-xs font-semibold text-error">{voiceHookError}</p>}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button type="button" onClick={() => void analyzeAnswer()} disabled={analyzing || !practiceQuestion.trim() || !answer.trim()} className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                {analyzing && <Loader2 className="h-4 w-4 animate-spin" />}
+                {analyzing ? "Analyzing answer" : "Analyze answer"}
+              </button>
+              <button type="button" onClick={() => { setAnswer(""); setDurationSeconds(0); setAnalysis(null); }} className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-ink-primary">Clear answer</button>
+            </div>
+            {analysis && (
+              <div className="mt-5 border-t border-border pt-4">
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <h3 className="text-lg font-bold text-ink-primary">{analysis.overallScore}/100</h3>
+                  <p className="text-sm font-semibold text-ink-secondary">{analysis.questionAnswered === null ? "Answer review" : analysis.questionAnswered ? "Answered the question" : "Did not fully answer the question"}</p>
+                </div>
+                {analysis.questionAssessment && <p className="mt-2 text-sm leading-6 text-ink-secondary">{analysis.questionAssessment}</p>}
+                <p className="mt-3 text-sm font-semibold text-ink-primary">{analysis.coachMessage}</p>
+                <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                  <div><h4 className="text-xs font-bold uppercase text-primary">Strengths</h4><ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-ink-secondary">{analysis.strengths.map((item) => <li key={item}>{item}</li>)}</ul></div>
+                  <div><h4 className="text-xs font-bold uppercase text-primary">Next improvements</h4><ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-ink-secondary">{analysis.weaknesses.map((item) => <li key={item}>{item}</li>)}</ul></div>
+                </div>
+                <h4 className="mt-4 text-xs font-bold uppercase text-primary">Communication scores</h4>
+                <div className="mt-2 flex flex-wrap gap-2">{Object.entries(analysis.skills).map(([skill, score]) => <span key={skill} className="rounded border border-border bg-surface-alt px-2 py-1 text-xs text-ink-primary">{skill}: {score}</span>)}</div>
+                <div className="mt-4 rounded-card bg-surface-alt p-3">
+                  <p className="text-xs font-bold uppercase text-primary">Stronger version</p>
+                  <p className="mt-2 whitespace-pre-line text-sm leading-6 text-ink-primary">{analysis.betterVersion}</p>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button type="button" onClick={() => setAnswer(analysis.betterVersion)} className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white">Use stronger version</button>
+                  <button type="button" onClick={() => { setPracticeQuestion(analysis.nextQuestion); setAnswer(""); setDurationSeconds(0); setAnalysis(null); }} className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-ink-primary">Practice follow-up</button>
                 </div>
               </div>
-            </div>
-          </div>
+            )}
+          </section>
         </header>
 
         <div className="mx-auto w-full max-w-3xl flex-1 space-y-4 overflow-y-auto px-5 py-7 sm:px-8">
@@ -232,13 +241,8 @@ export default function InterviewBuddyPage() {
         </div>
 
         <div className="border-t border-border bg-white px-5 py-4 sm:px-8">
-          {voiceHookError && <p role="alert" className="mx-auto mb-2 max-w-3xl rounded-card bg-error-soft p-2 text-xs font-semibold text-error">{voiceHookError}</p>}
           <form onSubmit={(e) => { e.preventDefault(); void send(); }} className="mx-auto flex max-w-3xl gap-2 relative">
             <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask your interview question…" aria-label="Ask Interview Buddy" className="flex-1 rounded-pill border border-border bg-surface-alt px-5 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15" />
-            {interim && <span className="absolute left-5 -top-6 text-xs text-ink-secondary">{interim}</span>}
-            <button type="button" onClick={toggleVoice} disabled={supported === false} aria-label={listening ? "Stop voice" : "Start voice"} className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-white ${supported === false ? "opacity-40" : ""} ${listening ? "bg-red-500 animate-pulse" : "bg-ink-secondary"}`} title={supported ? (listening ? "Stop listening" : "Voice type") : "Voice not supported"}>
-              {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-            </button>
             <button type="submit" disabled={!input.trim() || loading} aria-label="Send" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-white disabled:opacity-40"><Send className="h-4 w-4" /></button>
           </form>
         </div>

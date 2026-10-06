@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Modality } from "@google/genai";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const LIVE_MODEL = "gemini-3.1-flash-live-preview";
@@ -82,7 +82,7 @@ export function useGeminiLive(onTranscript: (text: string) => void) {
       const session = await ai.live.connect({
         model: LIVE_MODEL,
         config: {
-          responseModalities: ["AUDIO"],
+          responseModalities: [Modality.AUDIO],
           systemInstruction: `${COACH_INSTRUCTIONS}\nTraining skill: ${skill}. Session mode: ${mode}. First question: ${question}`,
           inputAudioTranscription: {},
           outputAudioTranscription: {},

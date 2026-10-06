@@ -15,6 +15,8 @@ export interface CommAnalysis {
   success: boolean;
   sessionId: string;
   overallScore: number;
+  questionAnswered: boolean | null;
+  questionAssessment: string;
   skills: Record<string, number>;
   strengths: string[];
   weaknesses: string[];
@@ -83,7 +85,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const communicationApi = {
   listSkills: () => request<{ skills: CommSkill[]; modes: CommMode[] }>("/skills"),
-  analyze: (input: { transcript: string; skill: string; mode: string; durationSeconds: number }) =>
+  analyze: (input: { transcript: string; skill: string; mode: string; durationSeconds: number; question?: string; targetRole?: string }) =>
     request<CommAnalysis>("/analyze", { method: "POST", body: JSON.stringify(input) }),
   history: () => request<CommProgress>("/history"),
   deleteHistory: () => request<{ success: boolean }>("/history", { method: "DELETE" }),

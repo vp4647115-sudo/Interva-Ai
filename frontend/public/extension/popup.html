@@ -1,98 +1,97 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>IntervAI Buddy</title>
     <style>
-      body {
-        margin: 0;
-        font-family: Arial, sans-serif;
-        background: #f6f7fb;
-        color: #111827;
-        width: 360px;
-        min-height: 420px;
-      }
-      .wrap {
-        padding: 16px;
-      }
-      h1 {
-        margin: 0 0 12px;
-        font-size: 20px;
-      }
-      label {
-        display: block;
-        font-size: 12px;
-        font-weight: 700;
-        margin-bottom: 6px;
-        color: #374151;
-      }
-      input, textarea, button {
-        width: 100%;
-        box-sizing: border-box;
-        border-radius: 12px;
-        border: 1px solid #dbe1ea;
-        font-size: 14px;
-      }
-      input, textarea {
-        padding: 10px 12px;
-        background: white;
-      }
-      textarea {
-        min-height: 110px;
-        resize: vertical;
-      }
-      button {
-        cursor: pointer;
-        padding: 10px 12px;
-        background: #2563eb;
-        color: white;
-        border: none;
-        font-weight: 700;
-        margin-top: 10px;
-      }
-      button.secondary {
-        background: #111827;
-      }
-      .answer {
-        margin-top: 14px;
-        padding: 12px;
-        background: white;
-        border: 1px solid #dbe1ea;
-        border-radius: 12px;
-        white-space: pre-wrap;
-        font-size: 13px;
-        line-height: 1.5;
-      }
-      .muted {
-        font-size: 12px;
-        color: #4b5563;
-        margin-top: 6px;
-      }
-      .error {
-        color: #b91c1c;
-        font-size: 12px;
-        margin-top: 8px;
-      }
+      :root { color-scheme: light; font-family: Arial, sans-serif; color: #17202b; background: #f5f7f8; }
+      * { box-sizing: border-box; }
+      body { width: 390px; max-height: 640px; margin: 0; overflow-y: auto; }
+      header { padding: 16px 18px 12px; background: #173d37; color: #fff; }
+      header h1 { margin: 0; font-size: 19px; }
+      header p { margin: 4px 0 0; color: #d1e5df; font-size: 12px; }
+      main { display: grid; gap: 12px; padding: 12px; }
+      section, details { border: 1px solid #d8dfdf; border-radius: 7px; background: #fff; padding: 12px; }
+      h2 { margin: 0 0 10px; font-size: 14px; }
+      label { display: block; margin: 9px 0 5px; color: #34433f; font-size: 11px; font-weight: 700; }
+      input, textarea { width: 100%; border: 1px solid #cbd5d3; border-radius: 5px; background: #fff; padding: 8px 9px; color: #17202b; font: inherit; font-size: 12px; }
+      textarea { min-height: 62px; resize: vertical; line-height: 1.45; }
+      button { min-height: 34px; border: 0; border-radius: 5px; background: #176b5a; padding: 7px 10px; color: #fff; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+      button.secondary { border: 1px solid #cbd5d3; background: #fff; color: #243630; }
+      button:disabled { cursor: wait; opacity: .55; }
+      .row { display: flex; gap: 7px; }
+      .row > button { flex: 1; }
+      .inline { display: flex; align-items: center; gap: 7px; font-size: 11px; }
+      .inline input { width: auto; }
+      .muted { margin: 6px 0 0; color: #65736f; font-size: 11px; line-height: 1.4; }
+      .status { min-height: 16px; margin: 0; color: #34574f; font-size: 11px; }
+      .error { color: #a33333; }
+      .result { margin-top: 9px; border-top: 1px solid #e0e6e4; padding-top: 9px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; line-height: 1.5; }
+      .result[hidden], [hidden] { display: none !important; }
+      details summary { cursor: pointer; font-size: 12px; font-weight: 700; }
+      #context-preview { max-height: 70px; overflow: auto; white-space: pre-wrap; }
+      .account { color: #176b5a; font-size: 11px; }
     </style>
   </head>
   <body>
-    <div class="wrap">
+    <header>
       <h1>IntervAI Buddy</h1>
-      <label for="role">Target role</label>
-      <input id="role" type="text" placeholder="e.g. Frontend Engineer" />
+      <p>Interview practice with communication-skill coaching</p>
+    </header>
+    <main>
+      <p id="status" class="status" role="status" aria-live="polite">Configure your API and sign in to start.</p>
 
-      <label for="question" style="margin-top: 12px;">Question</label>
-      <textarea id="question" placeholder="Ask for a model answer, a coaching tip, or interview help..."></textarea>
+      <details id="settings">
+        <summary>API connection</summary>
+        <label for="api-url">Deployed API origin</label>
+        <input id="api-url" type="url" placeholder="https://api.example.com" autocomplete="url" />
+        <div class="row"><button id="save-api">Save API</button><button id="check-api" class="secondary">Test connection</button></div>
+        <p class="muted">Use your FastAPI HTTPS origin. The extension asks permission only for this host.</p>
+      </details>
 
-      <button id="ask">Ask Buddy</button>
-      <button id="share-screen" class="secondary">Share my screen</button>
-      <div class="muted" id="status">No active request yet.</div>
-      <div class="muted" id="transcript" style="margin-top: 12px; min-height: 60px; white-space: pre-wrap; line-height: 1.5;">Transcript will appear here when your screen is shared.</div>
-      <div id="answer" class="answer" hidden></div>
-      <div id="error" class="error"></div>
-    </div>
+      <section aria-labelledby="account-heading">
+        <h2 id="account-heading">Account</h2>
+        <div id="signed-out">
+          <label for="email">Email</label>
+          <input id="email" type="email" autocomplete="username" />
+          <label for="password">Password</label>
+          <input id="password" type="password" autocomplete="current-password" />
+          <button id="sign-in" style="width:100%; margin-top:9px">Sign in</button>
+          <p class="muted">Use the email/password account linked to Interview AI. Your password is never saved.</p>
+        </div>
+        <div id="signed-in" hidden>
+          <div class="row" style="align-items:center"><span id="account-email" class="account" style="flex:1"></span><button id="sign-out" class="secondary">Sign out</button></div>
+        </div>
+      </section>
 
+      <section aria-labelledby="ask-heading">
+        <h2 id="ask-heading">Ask Buddy</h2>
+        <label for="target-role">Target role</label>
+        <input id="target-role" type="text" placeholder="e.g. Frontend Engineer" />
+        <button id="generate-question" class="secondary" style="width:100%; margin-top:9px">Generate practice question</button>
+        <label for="question">Interview question</label>
+        <textarea id="question" placeholder="Paste or read a practice question..."></textarea>
+        <div class="row" style="margin-top:8px"><button id="read-page" class="secondary">Read active page</button><button id="ask">Get model answer</button></div>
+        <label class="inline"><input id="include-page" type="checkbox" /> Include active page context with my request</label>
+        <p id="context-preview" class="muted">Page text stays local until you request coaching.</p>
+        <div id="model-answer" class="result" hidden></div>
+        <button id="practice-follow-up" class="secondary" style="width:100%; margin-top:9px" hidden>Practice follow-up question</button>
+      </section>
+
+      <section aria-labelledby="practice-heading">
+        <h2 id="practice-heading">Practice your answer</h2>
+        <label for="answer">Your answer</label>
+        <textarea id="answer" placeholder="Type your answer or dictate it with the microphone..."></textarea>
+        <div class="row" style="margin-top:8px"><button id="voice" class="secondary">Start dictation</button><button id="coach-answer">Analyze answer</button></div>
+        <div id="analysis" class="result" hidden></div>
+      </section>
+
+      <p id="error" class="status error" role="alert" aria-live="assertive"></p>
+    </main>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="api.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

@@ -59,7 +59,7 @@ export default function QuestionBankPage() {
           </section>
 
           <section className="mt-8 flex flex-col gap-4 rounded-2xl bg-primary-soft p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
-            <div><h2 className="text-2xl font-bold text-ink-primary">Read. Think. Answer. Review. Improve.</h2><p className="mt-2 leading-7 text-ink-secondary">Don't just read questions. Turn your practice into an interactive mock interview.</p></div>
+            <div><h2 className="text-2xl font-bold text-ink-primary">Read. Think. Answer. Review. Improve.</h2><p className="mt-2 leading-7 text-ink-secondary">Don&apos;t just read questions. Turn your practice into an interactive mock interview.</p></div>
             <a href="/mock-interviews" className="inline-flex shrink-0 items-center justify-center rounded-input bg-primary px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-hover">Practice With AI</a>
           </section>
         </div>

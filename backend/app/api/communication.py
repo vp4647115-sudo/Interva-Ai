@@ -40,6 +40,8 @@ class AnalyzeRequest(BaseModel):
     skill: str = Field(default="clarity", max_length=60)
     mode: str = Field(default="free", max_length=40)
     durationSeconds: int = Field(default=0, ge=0, le=3600)
+    question: str = Field(default="", max_length=1000)
+    targetRole: str = Field(default="", max_length=120)
 
 
 @router.get("/skills")
@@ -89,6 +91,8 @@ async def analyze_response(payload: AnalyzeRequest, user: CurrentUser, db=Depend
             skill_id=payload.skill,
             mode=payload.mode,
             duration_seconds=payload.durationSeconds,
+            question=payload.question,
+            target_role=payload.targetRole,
             profile=profile,
         )
     except GeminiQuotaError as exc:

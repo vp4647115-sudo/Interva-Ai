@@ -404,7 +404,8 @@ function DocumentationBlock({ block }: { block: DocBlock }) {
   if (block.type === "links") return <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">{block.items.map((item) => <a key={item.label} href={item.href} className="text-sm font-semibold text-primary underline underline-offset-2">{item.label} →</a>)}</div>;
   if (block.type === "groups") return <div className="mt-5 grid gap-5 sm:grid-cols-2">{block.items.map((group) => <div key={group.title} className="border-l-2 border-primary pl-4"><h3 className="font-semibold text-ink-primary">{group.title}</h3><ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-ink-secondary">{group.content.map((item) => <li key={item}>{item}</li>)}</ul></div>)}</div>;
   if (block.type === "process") return <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{block.items.map((item, index) => <div key={item.title} className="border-t-2 border-primary pt-3"><p className="text-xs font-bold uppercase tracking-wider text-primary">{String(index + 1).padStart(2, "0")}</p><h3 className="mt-1 font-bold text-ink-primary">{item.title}</h3>{item.description && <p className="mt-1 text-sm leading-6 text-ink-secondary">{item.description}</p>}</div>)}</div>;
-  return <div className="mt-4 divide-y divide-border">{block.items.map((item) => <details key={item.question} className="py-3"><summary className="cursor-pointer font-semibold text-ink-primary">{item.question}</summary><p className="mt-2 leading-7 text-ink-secondary">{item.answer}</p></details>)}</div>;
+  if (block.type === "faq") return <div className="mt-4 divide-y divide-border">{block.items.map((item) => <details key={item.question} className="py-3"><summary className="cursor-pointer font-semibold text-ink-primary">{item.question}</summary><p className="mt-2 leading-7 text-ink-secondary">{item.answer}</p></details>)}</div>;
+  return null;
 }
 
 export default function DocumentationPage() {
