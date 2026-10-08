@@ -84,6 +84,56 @@ export default function InterviewBuddyPage() {
     }
   };
 
+  const toggleScreenShare = async () => {
+    if (!navigator.mediaDevices?.getDisplayMedia) {
+      setError("Screen sharing requires Chrome or Edge.");
+      return;
+    }
+
+    if (screenSharing && screenStream) {
+      screenStream.getTracks().forEach((track) => track.stop());
+      setScreenStream(null);
+      setScreenSharing(false);
+      setScreenTranscript("");
+      stop();
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: {
+          frameRate: 30,
+          cursor: "always",
+        } as MediaTrackConstraints,
+        audio: true,
+      });
+
+      const videoTrack = stream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.onended = () => {
+          setScreenStream(null);
+          setScreenSharing(false);
+          setScreenTranscript("");
+          stop();
+        };
+      }
+
+      setScreenStream(stream);
+      setScreenSharing(true);
+      setError(null);
+      setScreenTranscript("Screen share is live. Your transcript will appear here.");
+
+      if (supported) {
+        start();
+      } else {
+        setError("Your browser does not support speech recognition. Try Chrome or Edge.");
+      }
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : "Unable to share your screen.";
+      setError(message);
+    }
+  };
+
   const generatePracticeQuestion = async () => {
     if (generatingQuestion) return;
     setError(null);

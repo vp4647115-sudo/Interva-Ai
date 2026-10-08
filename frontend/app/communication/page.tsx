@@ -63,6 +63,14 @@ function CoachPage() {
     setConsented(window.localStorage.getItem(CONSENT_KEY) === "true");
   }, []);
 
+  // ── Auto cleanup on unmount or tab exit ──────────────────────────────
+
+  useEffect(() => {
+    return () => {
+      speech.stop();
+    };
+  }, [speech]);
+
   useEffect(() => {
     if (speech.listening) {
       timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000);

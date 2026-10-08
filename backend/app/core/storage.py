@@ -40,14 +40,26 @@ def _bucket():
     return client.bucket(bucket_name)
 
 
-def validate_file(content_type: str, size: int, allowed: set[str]) -> str:
-    """Validate content type and size; returns the file extension."""
+def validate_file(content_type: str, size: int, allowed: set[str], data: bytes | None = None) -> str:
+    """Validate content type, file size, and binary magic headers; returns the file extension."""
     if content_type not in allowed:
         raise ValueError(f"Unsupported file type: {content_type}")
     if size <= 0:
         raise ValueError("The uploaded file is empty.")
     if size > MAX_UPLOAD_BYTES:
         raise ValueError("File is too large. Maximum size is 10 MB.")
+
+    if data:
+        # Check binary magic byte signatures to prevent extension/MIME spoofing
+        if content_type == "application/pdf" and not data.startswith(b"%PDF-"):
+            raise ValueError("Invalid PDF file signature. File header does not match PDF structure.")
+        elif content_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document" and not data.startswith(b"PK\x03\x04"):
+            raise ValueError("Invalid DOCX file signature. File header does not match DOCX/ZIP structure.")
+        elif content_type == "image/jpeg" and not data.startswith(b"\xff\xd8\xff"):
+            raise ValueError("Invalid JPEG file signature.")
+        elif content_type == "image/png" and not data.startswith(b"\x89PNG\r\n\x1a\n"):
+            raise ValueError("Invalid PNG file signature.")
+
     ext = allowed[content_type]
     return ext
 

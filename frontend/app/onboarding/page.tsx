@@ -8,6 +8,7 @@ import { onAuthStateChanged, type User } from "firebase/auth";
 import {
   apiClient,
   EducationEntry,
+  CertificateEntry,
   ExperienceEntry,
   Preferences,
   SkillEntry,
@@ -19,7 +20,7 @@ import { searchSkills } from "@/components/resume/SkillPicker";
 import TaxonomyInput from "@/components/ui/TaxonomyInput";
 import { COMPANY_TAXONOMY, JOB_TITLE_TAXONOMY } from "@/lib/skills/companies";
 
-const STEPS = ["profile", "education", "experience", "skills", "preferences"] as const;
+const STEPS = ["profile", "education", "experience", "skills", "preferences", "certificates"] as const;
 type Step = (typeof STEPS)[number];
 
 const STEP_LABELS: Record<Step, string> = {
@@ -27,6 +28,7 @@ const STEP_LABELS: Record<Step, string> = {
   education: "Education",
   experience: "Experience",
   skills: "Skills",
+  certificates: "Certificates",
   preferences: "Career Preferences",
 };
 
@@ -46,6 +48,7 @@ export default function OnboardingPage() {
   const [education, setEducation] = useState<EducationEntry[]>([]);
   const [experience, setExperience] = useState<ExperienceEntry[]>([]);
   const [skills, setSkills] = useState<SkillEntry[]>([]);
+  const [certificates, setCertificates] = useState<CertificateEntry[]>([]);
   const [prefs, setPrefs] = useState<Preferences>({
     target_roles: [],
     seniority: null,
@@ -56,6 +59,7 @@ export default function OnboardingPage() {
   const [eduForm, setEduForm] = useState({ school: "", degree: "", field_of_study: "" });
   const [expForm, setExpForm] = useState({ company: "", title: "", description: "", years: "" });
   const [skillForm, setSkillForm] = useState({ name: "", level: 3 });
+  const [certificateForm, setCertificateForm] = useState({ name: "", cert_id: "", link: "" });
   const [skillListOpen, setSkillListOpen] = useState(false);
 
   const skillSuggestions = useMemo(
@@ -83,15 +87,20 @@ export default function OnboardingPage() {
     try {
       const wizard = await apiClient.getWizardState();
       setState(wizard);
-      const [edu, exp, skl, prf] = await Promise.all([
+      const [profile, edu, exp, skl, certs, prf] = await Promise.all([
+        apiClient.getProfile(),
         apiClient.listEducation(),
         apiClient.listExperience(),
         apiClient.listSkills(),
+        apiClient.listCertificates(),
         apiClient.getPreferences(),
       ]);
+      setFullName(profile.full_name ?? "");
+      setHeadline(profile.bio ?? profile.target_role ?? "");
       setEducation(edu);
       setExperience(exp);
       setSkills(skl);
+      setCertificates(certs);
       setPrefs(prf);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load onboarding.");
@@ -149,6 +158,21 @@ export default function OnboardingPage() {
       current_step: nextIdx,
       finished: state!.finished,
     });
+  }
+
+  async function saveBasicProfile() {
+    setSaving(true);
+    setError(null);
+    try {
+      await apiClient.updateProfile({
+        full_name: fullName.trim() || null,
+        bio: headline.trim() || null,
+      });
+      markDone("profile");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to save profile.");
+      setSaving(false);
+    }
   }
 
   function goTo(step: Step) {
@@ -214,7 +238,7 @@ export default function OnboardingPage() {
                   placeholder="e.g. Backend engineer passionate about distributed systems" />
               </div>
             </div>
-            <button onClick={() => markDone("profile")} disabled={saving}
+            <button onClick={() => void saveBasicProfile()} disabled={saving}
               className="mt-6 rounded-pill bg-primary px-6 py-2.5 text-sm font-bold text-white hover:bg-primary-dark disabled:opacity-50">
               Save &amp; continue
             </button>
@@ -426,6 +450,30 @@ export default function OnboardingPage() {
               className="mt-6 rounded-pill bg-primary px-6 py-2.5 text-sm font-bold text-white hover:bg-primary-dark disabled:opacity-50">
               Save &amp; continue
             </button>
+          </div>
+        )}
+
+        {currentStep === "certificates" && (
+          <div>
+            <h2 className="text-xl font-bold">Certificates</h2>
+            <p className="mt-1 text-sm text-ink-secondary">Add relevant certificates now, or skip this optional step.</p>
+            <ul className="mt-4 space-y-2">
+              {certificates.map((certificate) => (
+                <li key={certificate.id} className="flex items-center justify-between gap-3 rounded-xl border border-border p-3">
+                  <span className="text-sm"><strong>{certificate.name}</strong>{certificate.cert_id && <> — {certificate.cert_id}</>}</span>
+                  <button className="text-sm font-semibold text-error" onClick={() => void apiClient.deleteCertificate(certificate.id).then(load)}>Remove</button>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <input className={inputCls} placeholder="Certificate name" value={certificateForm.name} onChange={(e) => setCertificateForm({ ...certificateForm, name: e.target.value })} />
+              <input className={inputCls} placeholder="Certificate ID (optional)" value={certificateForm.cert_id} onChange={(e) => setCertificateForm({ ...certificateForm, cert_id: e.target.value })} />
+              <input className={inputCls} type="url" placeholder="Certificate link (optional)" value={certificateForm.link} onChange={(e) => setCertificateForm({ ...certificateForm, link: e.target.value })} />
+            </div>
+            <div className="mt-4 flex gap-3">
+              <button disabled={!certificateForm.name.trim() || saving} onClick={() => void apiClient.addCertificate({ name: certificateForm.name.trim(), cert_id: certificateForm.cert_id.trim() || null, link: certificateForm.link.trim() || null }).then(() => { setCertificateForm({ name: "", cert_id: "", link: "" }); return load(); })} className="rounded-pill border border-primary px-5 py-2 text-sm font-bold text-primary disabled:opacity-40">Add Certificate</button>
+              <button onClick={() => markDone("certificates")} disabled={saving} className="rounded-pill bg-primary px-6 py-2 text-sm font-bold text-white hover:bg-primary-dark disabled:opacity-50">Save &amp; continue</button>
+            </div>
           </div>
         )}
 

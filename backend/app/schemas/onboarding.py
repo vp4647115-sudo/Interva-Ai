@@ -72,29 +72,49 @@ class OnboardingCompleteOut(OnboardingStatusOut):
 
 
 class EducationIn(BaseModel):
-    school: str = Field(min_length=1, max_length=200)
+    school: str = Field(default="", max_length=200)
     degree: str | None = Field(default=None, max_length=200)
     field_of_study: str | None = Field(default=None, max_length=200)
+    qualification_type: str | None = Field(default=None, max_length=50)
+    score_type: str | None = Field(default=None, max_length=20)
+    score_value: float | None = Field(default=None, ge=0)
     start_date: date | None = None
     end_date: date | None = None  # null = ongoing
+
+    @field_validator("start_date", "end_date", mode="before")
+    @classmethod
+    def _clean_date(cls, v: Any) -> Any:
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
 
 
 class EducationOut(EducationIn):
     id: str
+    school: str = Field(default="", max_length=200)
     created_at: datetime | None = None
 
 
 class ExperienceIn(BaseModel):
-    company: str = Field(min_length=1, max_length=200)
-    title: str = Field(min_length=1, max_length=200)
+    company: str = Field(default="", max_length=200)
+    title: str = Field(default="", max_length=200)
     description: str | None = None
     years: float | None = Field(default=None, ge=0, le=50)
     start_date: date | None = None
     end_date: date | None = None  # null = current
 
+    @field_validator("start_date", "end_date", mode="before")
+    @classmethod
+    def _clean_date(cls, v: Any) -> Any:
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
+
 
 class ExperienceOut(ExperienceIn):
     id: str
+    company: str = Field(default="", max_length=200)
+    title: str = Field(default="", max_length=200)
     created_at: datetime | None = None
 
 

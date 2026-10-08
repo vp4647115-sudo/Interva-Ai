@@ -13,7 +13,7 @@ export function CTABanner() {
         <div className="mt-8 flex flex-col items-center gap-4">
           <PillLink href="/auth/register" variant="success" size="lg">Get started free</PillLink>
           <div className="flex items-center gap-3 opacity-90">
-            <AvatarStack names={["A", "B", "C", "D"]} />
+            <AvatarStack names={["Priya Sharma", "James Lee", "Ana Costa", "Omar Haddad"]} />
             <span className="text-sm">Join thousands of candidates practicing daily</span>
           </div>
         </div>

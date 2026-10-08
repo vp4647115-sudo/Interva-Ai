@@ -1,0 +1,27 @@
+<svg width="960" height="600" viewBox="0 0 960 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="background" x1="70" y1="30" x2="900" y2="600" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EDE9FE"/><stop offset="1" stop-color="#FCE7F3"/>
+    </linearGradient>
+    <linearGradient id="shirt" x1="320" y1="350" x2="620" y2="600" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5B3FE6"/><stop offset="1" stop-color="#342187"/>
+    </linearGradient>
+  </defs>
+  <rect width="960" height="600" rx="44" fill="url(#background)"/>
+  <circle cx="796" cy="102" r="126" fill="#C4B5FD" fill-opacity=".5"/>
+  <circle cx="130" cy="516" r="158" fill="#F9A8D4" fill-opacity=".3"/>
+  <rect x="650" y="180" width="188" height="140" rx="20" fill="white" fill-opacity=".68"/>
+  <path d="M690 237h108M690 266h72" stroke="#8B7BE8" stroke-width="13" stroke-linecap="round"/>
+  <rect x="664" y="344" width="152" height="104" rx="18" fill="#FFF" fill-opacity=".58"/>
+  <circle cx="704" cy="394" r="19" fill="#F472B6"/><path d="M742 381h42M742 408h28" stroke="#9B8DF0" stroke-width="11" stroke-linecap="round"/>
+  <path d="M236 600c16-154 76-222 186-222s171 68 191 222H236Z" fill="url(#shirt)"/>
+  <path d="M352 387c18 22 43 34 70 34 30 0 56-12 74-34v66c-17 30-42 45-74 45-31 0-55-15-70-45v-66Z" fill="#B96845"/>
+  <ellipse cx="422" cy="286" rx="113" ry="136" fill="#D98962"/>
+  <path d="M309 286c0-108 52-163 127-150 77 13 106 80 95 168-20-18-35-51-39-90-38 42-93 63-166 63-5 0-11 0-17-1Z" fill="#262035"/>
+  <path d="M324 251c12-93 70-135 143-119 27 6 55 28 67 62-44-22-90-28-136-13-28 9-53 29-74 70Z" fill="#262035"/>
+  <ellipse cx="379" cy="291" rx="9" ry="12" fill="#271B1B"/><ellipse cx="465" cy="291" rx="9" ry="12" fill="#271B1B"/>
+  <path d="M390 349c20 16 44 16 65 0" stroke="#8B3D40" stroke-width="8" stroke-linecap="round"/>
+  <path d="M360 262c14-11 28-11 42-2M444 260c14-9 28-9 42 2" stroke="#55302E" stroke-width="8" stroke-linecap="round"/>
+  <path d="M360 465c16 22 37 33 62 33 27 0 49-11 65-33" stroke="white" stroke-width="9" stroke-linecap="round" opacity=".75"/>
+  <text x="680" y="142" fill="#5B3FE6" font-family="Arial, sans-serif" font-size="25" font-weight="700">Interview ready</text>
+</svg>

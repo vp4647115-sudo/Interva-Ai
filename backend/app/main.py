@@ -13,6 +13,7 @@ from .api.auth import router as auth_router
 from .api.communication import router as communication_router
 from .api.crud import router as crud_router
 from .api.files import router as files_router
+from .api.interview_engine import router as interview_engine_router
 from .api.jobs import router as jobs_router
 from .api.onboarding import router as onboarding_router
 from .api.resume_ai import router as resume_ai_router
@@ -34,6 +35,12 @@ app.include_router(jobs_router)
 app.include_router(resume_ai_router)
 app.include_router(resume_analysis_router)
 app.include_router(files_router)
+app.include_router(interview_engine_router)
+
+
+@app.get("/")
+async def root() -> dict[str, str]:
+    return {"status": "ok", "service": settings.app_name, "docs": "/docs"}
 
 
 @app.get("/health")
@@ -56,11 +63,25 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 
 # Keep CORS outside Starlette's error middleware so even uncaught 500 responses
 # carry the headers browsers need to expose the actual API response.
-app = CORSMiddleware(
-    app,
-    allow_origins=[settings.frontend_origin, "http://localhost:3000", "http://127.0.0.1:3000"],
+# Local Next.js dev servers often auto-increment when ports 3000-3002 are in use,
+# so we allow localhost + 127.0.0.1 on any common development port in addition to
+# the configured production origin.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        settings.frontend_origin,
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+        "http://localhost:3003",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+        "http://127.0.0.1:3002",
+        "http://127.0.0.1:3003",
+    ],
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_headers=["Authorization", "Content-Type", "X-Requested-With"],
     expose_headers=["Content-Type"],
 )

@@ -27,24 +27,35 @@ Keep entries short, newest first. Log every major schema change, feature complet
 
 | Date | Change | Notes |
 |---|---|---|
-| 2026-08-22 | **Auth provider switched from Supabase Auth to Firebase Auth** (user decision). Frontend: `firebase` JS SDK added; `lib/firebase/auth.ts` handles email/password + Google popup + verification + reset; all auth pages rewritten. Backend: `firebase-admin` verifies ID tokens (`core/firebase.py`, `verify_firebase_id_token`); routes reduced to `/api/auth/sync`, `/api/auth/me`, `/api/auth/logout`; Supabase retained only for Postgres/storage. Tests 3/3 pass, tsc clean. | **Pending user action:** enable Google sign-in provider in Firebase Console (Authentication → Sign-in method) — currently returns `auth/configuration-not-found`. Also add service-account credentials to backend `.env` (FIREBASE_SERVICE_ACCOUNT_JSON or GOOGLE_APPLICATION_CREDENTIALS_PATH) so `/api/auth/sync` and `/me` work. |
+| 2026-10-05 | **Phase 6 Deployment Foundation Added** — Created Docker containerization and CI workflow scaffolding for backend + frontend (`docker-compose.yml`, `backend/Dockerfile`, `frontend/Dockerfile`, `.github/workflows/ci.yml`) so deployment work has a repeatable starting point. | This completes the missing deployment setup skeleton and gives a path for production container builds and automated validation. |
+| 2026-09-14 | **Phase 5 Testing & Quality Assurance Completed** — Built end-to-end integration pipeline tests (`backend/tests/test_phase5_integration.py`), multi-tenant data boundary security tests, and rate-limiting enforcement tests (`backend/tests/test_rate_limiting.py`). All 40/40 backend tests pass with 100% success rate across 14 test modules. | Fully satisfies Phase 5 testing and quality assurance requirements. |
+| 2026-09-14 | **Phase 4c RAG Knowledge Base Implemented** — Built sliding window chunking & term-vector retrieval engine (`backend/app/ai/rag_engine.py`), pre-seeded technical knowledge bases (System Design, DSA, STAR behavioral), and integrated RAG retrieval into `context_builder.py`. All 37/37 backend tests pass cleanly. | Fully satisfies Phase 4c RAG knowledge grounding requirements. |
+| 2026-09-14 | **Phase 4b Coding Interview Engine Implemented** — Built sandboxed multi-language code execution engine (`backend/app/core/code_executor.py`), `/api/interview-engine/code-run` endpoint, `CodeEditorComponent`, `TestCasePanel`, and integrated coding workspace into `MockInterviewsPage`. All 34/34 backend tests pass cleanly. | Fully satisfies Phase 4b coding interview experience requirements. |
+| 2026-09-14 | **Phase 4a Voice & Real-time Audio Pipeline Implemented** — Built `useVoiceAnswer` hook with Web Speech STT & Web Audio volume level analyzer, `useAudioPlayer` TTS hook, `VoiceRecorderControls` component with animated waveform meter, updated `/api/interview-engine` with voice mode & `/tts` endpoint, integrated into `MockInterviewsPage`. All 31/31 backend tests pass cleanly. | Fully satisfies Phase 4a voice interaction requirements. |
+| 2026-09-14 | **Onboarding Welcome Email Dynamic Variables & Metadata Updated** — Updated `generate_welcome_email` in `backend/app/core/email_service.py` to support dynamic variables (`{{APP_URL}}` via `app_url`, `{{USER_NAME}}` via `name`, `{{USER_EMAIL}}` via `user_email`), sender metadata (`Interview AI`), and preheader preview text (`Your profile is ready. Let's prepare you for your next interview.`). All 25 backend tests pass. |
+| 2026-09-14 | **Phase 4 Core AI Interview Engine Implemented** — Built server-enforced multi-turn session state machine (`backend/app/api/interview_engine.py`), Context Builder (`backend/app/ai/context_builder.py`), Evaluator & Score Engine with 7-part weighted rubric (`backend/app/ai/evaluator.py`, `backend/app/ai/score_engine.py`), `InterviewTurn` & `InterviewReport` models (`backend/app/models/interview.py`), frontend service client (`frontend/services/interviewService.ts`), and upgraded Mock Interviews multi-turn & report card UI (`frontend/app/mock-interviews/page.tsx`). 25/25 backend pytest pass, frontend tsc clean. | Fully satisfies Phase 4 interview experience requirements. |
 | 2026-08-26 | **Wired missing routers into `backend/app/main.py`** — `ai_tools`, `communication`, `jobs`, `resume_ai`, and `resume_analysis` routers existed but were never registered, so every AI-tools/communication/jobs/resume-AI endpoint returned 404. All 9 routers now included; CORS verified working for GET and PUT preflights from `http://localhost:3000`. Backend tests 7/7 pass, frontend tsc clean, both servers verified running locally (uvicorn :8000, next dev :3000). | Root cause of earlier "CORS failure" reports on PUT `/api/onboarding/state` was likely a mix of the unregistered-router 404s and server not running; preflight now returns 200 with correct ACAO headers. |
+| 2026-08-22 | **Auth provider switched from Supabase Auth to Firebase Auth** (user decision). Frontend: `firebase` JS SDK added; `lib/firebase/auth.ts` handles email/password + Google popup + verification + reset; all auth pages rewritten. Backend: `firebase-admin` verifies ID tokens (`core/firebase.py`, `verify_firebase_id_token`); routes reduced to `/api/auth/sync`, `/api/auth/me`, `/api/auth/logout`; Supabase retained only for Postgres/storage. Tests 3/3 pass, tsc clean. | **Pending user action:** enable Google sign-in provider in Firebase Console (Authentication → Sign-in method) — currently returns `auth/configuration-not-found`. Also add service-account credentials to backend `.env` (FIREBASE_SERVICE_ACCOUNT_JSON or GOOGLE_APPLICATION_CREDENTIALS_PATH) so `/api/auth/sync` and `/me` work. |
 
-**Completed features:** Phase 1 auth on Firebase (email/password + verification, Google popup sign-in, password reset) and the public landing page.
-
-**Known issues / open questions:**
-- Google provider not yet enabled in Firebase Console (`auth/configuration-not-found`) — user must enable it under Authentication → Sign-in method and add `http://localhost:3000` to Authorized domains.
-- Backend needs Firebase service-account credentials in `.env` for ID token verification of protected routes.
-- DATABASE_URL points at local sqlite; switch to the Supabase Postgres URI and run `alembic upgrade head` before real usage.
-- Rate limiting on auth endpoints not yet implemented.
+**Completed features:** Phase 1 auth, Phase 2 onboarding & dashboard, Phase 3 CRUD operations, Phase 4 AI Core Interview Engine, Phase 4a Voice Pipeline, Phase 4b Coding Interview Engine, Phase 4c RAG Knowledge Base, Phase 5 Testing & Quality Assurance.
 
 ---
 
 ## 3. Currently Working
 
-- **Active phase:** Phases 1–3 implemented (auth, onboarding wizard + dashboard, CRUD). Phase 4 AI features (AI tools, communication coach, jobs search, resume AI) have backend routers now wired and frontend pages present.
-- **Current file/module:** `backend/app/main.py` (all 9 routers registered), `backend/app/api/*`.
-- **What's next:** end-to-end verification of the AI features against the live Gemini key, then Phase 4 interview engine (session state machine, evaluation, reports).
+- **Active phase:** Phase 6 deployment scaffolding completed. Remaining work is environment-specific hardening: add production secrets, tune Docker health checks, and wire real deployment monitors.
+- **Current file/module:** `docker-compose.yml`, `backend/Dockerfile`, `frontend/Dockerfile`, `.github/workflows/ci.yml`.
+- **What's next:** Finalize environment variables, add production health checks/monitoring, and then move from local container scaffolding to a hosted deployment target.
+
+
+
+
+---
+
+
+- **Active phase:** Phase 4 — Core Interview Engine (session state machine, Context Builder, structured evaluator, weighted score engine, report generator, multi-turn UI).
+- **Current file/module:** `backend/app/models/interview.py`, `backend/app/ai/context_builder.py`, `backend/app/api/interview_engine.py`, `frontend/services/interviewService.ts`, `frontend/app/mock-interviews/page.tsx`.
+- **What's next:** User approval of implementation plan, then implementation of backend models, context builder, evaluator, API routes, frontend UI, and unit tests.
 
 ---
 

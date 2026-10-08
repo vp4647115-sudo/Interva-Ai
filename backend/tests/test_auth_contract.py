@@ -19,6 +19,12 @@ def test_health(client: TestClient) -> None:
     assert resp.json() == {"status": "ok"}
 
 
+def test_root_endpoint(client: TestClient) -> None:
+    resp = client.get("/")
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "ok"
+
+
 def test_me_requires_token(client: TestClient) -> None:
     assert client.get("/api/auth/me").status_code in (401, 403)
 

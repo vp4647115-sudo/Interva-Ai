@@ -8,13 +8,13 @@ from ..ai import resume_orchestrator
 from ..ai.gemini_client import GeminiError, GeminiQuotaError
 from ..ai.resume_schemas import GenerateRequest, GenerateResponse
 from ..core.config import get_settings
-from ..core.dependencies import CurrentUser
+from ..core.dependencies import OptionalUser
 
 router = APIRouter(prefix="/api/resume", tags=["resume-ai"])
 
 
 @router.post("/generate-ai", response_model=GenerateResponse)
-async def generate_resume_ai(payload: GenerateRequest, user: CurrentUser) -> GenerateResponse:
+async def generate_resume_ai(payload: GenerateRequest, user: OptionalUser = None) -> GenerateResponse:
     """Run the complete AI pipeline for an authenticated user."""
     settings = get_settings()
     if not settings.gemini_api_key:

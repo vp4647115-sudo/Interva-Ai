@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 const candidatePhotos: Record<string, string> = {
   "Priya Sharma": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=96&h=96&fit=crop&crop=faces",
   "James Lee": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop&crop=faces",
@@ -11,12 +13,13 @@ export function AvatarStack({ names }: { names: string[] }) {
       {names.map((n) => {
         const src = candidatePhotos[n];
         return src ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             key={n}
             src={src}
             alt={n}
             title={n}
+            width={36}
+            height={36}
             className="h-9 w-9 rounded-full border-2 border-white object-cover"
           />
         ) : (

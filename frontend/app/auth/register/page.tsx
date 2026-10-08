@@ -147,7 +147,7 @@ export default function RegisterPage() {
                   <input type="checkbox" {...register("consentTerms")} className="mt-0.5" />
                   <span>
                     I agree to the <Link href="/" className="text-primary underline">Terms</Link> and{" "}
-                    <Link href="/" className="text-primary underline">Privacy Policy</Link>.
+                    <Link href="/privacy" className="text-primary underline">Privacy Policy</Link>.
                   </span>
                 </label>
                 {errors.consentTerms && (

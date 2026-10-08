@@ -26,6 +26,7 @@ class EducationIn(BaseModel):
 class GenerateRequest(BaseModel):
     target_role: str = Field(min_length=1, max_length=120)
     full_name: str = Field(min_length=1, max_length=120)
+    field_type: str = Field(default="software", max_length=60)
     email: str = ""
     phone: str = ""
     location: str = ""
@@ -79,9 +80,21 @@ class MarketInsights(BaseModel):
     sources: list[str] = Field(default_factory=list)
 
 
+class ScoreBreakdown(BaseModel):
+    ats_compatibility: int = 85
+    impact_quantification: int = 80
+    skill_relevance: int = 85
+    executive_polish: int = 90
+    strengths: list[str] = Field(default_factory=list)
+    improvements: list[str] = Field(default_factory=list)
+
+
 class GenerateResponse(BaseModel):
     strategy: ResumeStrategy
     market: MarketInsights
     content: GeneratedContent
+    industry_score: int = 85
+    score_breakdown: ScoreBreakdown = Field(default_factory=ScoreBreakdown)
     model: str = ""
     grounded: bool = False
+

@@ -18,9 +18,11 @@ export interface ResumeAnalysis {
     skills?: string[];
     technicalSkills?: string[];
     softSkills?: string[];
-    education?: { degree?: string | null; school?: string | null; dates?: string | null }[];
-    experience?: { title?: string | null; company?: string | null; dates?: string | null; description?: string | null }[];
-    projects?: { name?: string | null; technologies?: string | null; description?: string | null }[];
+    toolsAndFrameworks?: string[];
+    languages?: string[];
+    education?: { degree?: string | null; school?: string | null; fieldOfStudy?: string | null; dates?: string | null }[];
+    experience?: { title?: string | null; company?: string | null; dates?: string | null; description?: string | null; bullets?: string[] }[];
+    projects?: { name?: string | null; technologies?: string[] | string | null; description?: string | null }[];
     certifications?: string[];
   };
   analysis: {
@@ -66,10 +68,23 @@ export async function improveSection(input: {
   return body;
 }
 
-/** Map Gemini's extracted resume data into the builder's draft shape. */
+/** Map Gemini's extracted resume data into the builder's draft shape cleanly. */
 export function analysisToDraft(analysis: ResumeAnalysis): ResumeDraft {
-  const d = analysis.resumeData;
+  const d = analysis.resumeData ?? {};
   const p = d.personalInfo ?? {};
+
+  const allSkills = Array.from(new Set([
+    ...(d.technicalSkills ?? []),
+    ...(d.toolsAndFrameworks ?? []),
+    ...(d.skills ?? []),
+    ...(d.softSkills ?? []),
+    ...(d.languages ?? []),
+  ].filter((s): s is string => Boolean(s && s.trim()))));
+
+  const eduFirst = d.education?.[0];
+  const eduDegree = eduFirst?.degree ?? "";
+  const eduField = eduFirst?.fieldOfStudy ? ` in ${eduFirst.fieldOfStudy}` : "";
+
   return {
     name: p.fullName ?? "",
     role: "",
@@ -78,14 +93,35 @@ export function analysisToDraft(analysis: ResumeAnalysis): ResumeDraft {
     location: p.location ?? "",
     linkedin: p.linkedin ?? "",
     summary: d.summary ?? "",
-    degree: d.education?.[0]?.degree ?? "",
-    school: d.education?.[0]?.school ?? "",
-    skills: [...(d.technicalSkills ?? []), ...(d.skills ?? []), ...(d.softSkills ?? [])].filter(Boolean),
-    experience: (d.experience ?? []).map((e, i) => ({
-      id: i, title: e.title ?? "", company: e.company ?? "", dates: e.dates ?? "", description: e.description ?? "",
-    })),
-    projects: (d.projects ?? []).map((pr, i) => ({
-      id: i, name: pr.name ?? "", technologies: pr.technologies ?? "", description: pr.description ?? "",
-    })),
+    degree: `${eduDegree}${eduField}`.trim(),
+    school: eduFirst?.school ?? "",
+    skills: allSkills,
+    experience: (d.experience ?? []).map((e, i) => {
+      let desc = e.description ?? "";
+      if (Array.isArray(e.bullets) && e.bullets.length > 0) {
+        desc = e.bullets.map((b) => (b.startsWith("•") ? b : `• ${b}`)).join("\n");
+      }
+      return {
+        id: i + 1,
+        title: e.title ?? "",
+        company: e.company ?? "",
+        dates: e.dates ?? "",
+        description: desc,
+      };
+    }),
+    projects: (d.projects ?? []).map((pr, i) => {
+      let techStr = "";
+      if (Array.isArray(pr.technologies)) {
+        techStr = pr.technologies.join(", ");
+      } else if (typeof pr.technologies === "string") {
+        techStr = pr.technologies;
+      }
+      return {
+        id: i + 1,
+        name: pr.name ?? "",
+        technologies: techStr,
+        description: pr.description ?? "",
+      };
+    }),
   };
 }

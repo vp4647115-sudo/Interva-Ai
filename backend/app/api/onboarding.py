@@ -21,6 +21,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..core.authorization import verify_object_ownership
 from ..core.dependencies import CurrentUser
 from ..core.email_service import dispatch_welcome_email
 from ..core.storage import StorageError, upload_user_file, validate_file
@@ -106,6 +107,36 @@ async def put_state(
     )
 
 
+async def get_onboarding_details(db: AsyncSession, user_id: str) -> dict[str, Any]:
+    """Gather candidate onboarding profile information for welcome emails."""
+    profile = await _get_profile(db, user_id)
+    pref = await db.scalar(select(CareerPreference).where(CareerPreference.user_id == user_id))
+    skills = (await db.scalars(select(Skill).where(Skill.user_id == user_id))).all()
+    experiences = (await db.scalars(select(Experience).where(Experience.user_id == user_id).order_by(Experience.created_at.desc()))).all()
+    educations = (await db.scalars(select(Education).where(Education.user_id == user_id).order_by(Education.created_at.desc()))).all()
+
+    target_roles = [r.strip() for r in (pref.target_roles or "").split(",") if r.strip()] if pref else []
+    industries = [i.strip() for i in (pref.preferred_industries or "").split(",") if i.strip()] if pref else []
+    skill_names = [s.name for s in skills]
+
+    exp_summary = f"{experiences[0].title} at {experiences[0].company}" if experiences else None
+    edu_summary = f"{educations[0].degree or 'Degree'} from {educations[0].school}" if educations else None
+
+    onboarding_data = (profile.onboarding_data or {}) if profile else {}
+
+    return {
+        "user_name": (profile.full_name if profile else None),
+        "target_roles": target_roles,
+        "seniority": (pref.seniority if pref else None),
+        "preferred_industries": industries,
+        "skills": skill_names,
+        "experience_summary": exp_summary,
+        "education_summary": edu_summary,
+        "address": onboarding_data.get("address"),
+        "certificate_number": onboarding_data.get("certificateNumber"),
+    }
+
+
 @router.post("/finish", response_model=WizardStateOut)
 async def finish(user: CurrentUser, db: AsyncSession = Depends(get_db)) -> WizardStateOut:
     state = await _get_state(db, user["id"])
@@ -115,10 +146,6 @@ async def finish(user: CurrentUser, db: AsyncSession = Depends(get_db)) -> Wizar
     await db.commit()
     await db.refresh(state)  # commit() expires the instance; reload before access
 
-    # Preserve the existing frontend contract: older clients call /finish
-    # without the newer contact payload. Complete the account from the
-    # verified identity so their database state and redirect remain correct;
-    # newer clients should use /complete to include address/certificate data.
     profile = await _get_profile(db, user["id"])
     if profile and not profile.onboarding_completed:
         profile.onboarding_data = {"email": user["email"], "address": None, "certificateNumber": None}
@@ -137,10 +164,11 @@ async def finish(user: CurrentUser, db: AsyncSession = Depends(get_db)) -> Wizar
         )
         await db.commit()
         if claim.rowcount == 1:
+            details = await get_onboarding_details(db, user["id"])
             dispatch_welcome_email(
                 to_email=user["email"],
-                user_name=profile.full_name or user["claims"].get("name"),
                 on_result=lambda ok: _mark_email_result(user["id"], ok),
+                **details,
             )
     return WizardStateOut(
         completed_steps=_split(state.completed_steps),
@@ -198,9 +226,16 @@ def _mark_email_result(uid: str, success: bool) -> None:
     import asyncio
 
     try:
-        asyncio.run(_update())
-    except Exception:  # noqa: BLE001 — never crash the worker thread
-        logger.exception("Failed to persist welcome-email result for %s", uid)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(_update())
+        finally:
+            loop.close()
+    except (RuntimeError, OSError, ValueError) as exc:
+        logger.exception("Failed to persist welcome-email result for %s: %s", uid, exc)
+    except BaseException as exc:  # last-resort guard — worker thread must never crash
+        logger.exception("Unexpected error persisting welcome-email result for %s: %s", uid, exc)
 
 
 @router.post("/complete", response_model=OnboardingCompleteOut)
@@ -263,14 +298,12 @@ async def complete_onboarding(
     )
     await db.commit()
     if claim.rowcount == 1:
+        details = await get_onboarding_details(db, user["id"])
         dispatch_welcome_email(
             to_email=verified_email,  # authenticated user's registered email only
-            user_name=profile.full_name or user["claims"].get("name"),
             on_result=lambda ok: _mark_email_result(user["id"], ok),
+            **details,
         )
-        # We cannot block the response for up to 30s of SMTP latency; the
-        # worker thread flips the flag on confirmation. If SMTP fails here,
-        # onboarding stays complete and the next login retries the email.
         email_accepted = False
     else:
         email_accepted = True
@@ -293,7 +326,7 @@ CERTIFICATE_TYPES = {
 
 @router.post("/certificate")
 async def upload_certificate(
-    file: UploadFile = File(...), user: CurrentUser = None
+    user: CurrentUser, file: UploadFile = File(...)
 ) -> dict[str, str]:
     """Upload a certificate attachment for the authenticated user."""
     contents = await file.read()
@@ -322,9 +355,12 @@ async def list_education(user: CurrentUser, db: AsyncSession = Depends(get_db)):
     return [
         EducationOut(
             id=str(r.id),
-            school=r.school,
+            school=r.school or "",
             degree=r.degree,
             field_of_study=r.field_of_study,
+            qualification_type=r.qualification_type,
+            score_type=r.score_type,
+            score_value=r.score_value,
             start_date=r.start_date,
             end_date=r.end_date,
             created_at=r.created_at,
@@ -341,33 +377,26 @@ async def add_education(
     db.add(row)
     await db.commit()
     await db.refresh(row)  # commit() expires the instance; reload before access
-    return EducationOut(id=str(row.id), **payload.model_dump())
+    return EducationOut(id=str(row.id), created_at=row.created_at, **payload.model_dump())
 
 
 @router.put("/education/{row_id}", response_model=EducationOut)
 async def update_education(
     row_id: str, payload: EducationIn, user: CurrentUser, db: AsyncSession = Depends(get_db)
 ):
-    row = await db.scalar(
-        select(Education).where(Education.id == row_id, Education.user_id == user["id"])
-    )
-    if not row:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
+    row = await verify_object_ownership(db, Education, row_id, user["id"])
     for key, value in payload.model_dump().items():
         setattr(row, key, value)
     await db.commit()
-    return EducationOut(id=str(row.id), **payload.model_dump())
+    await db.refresh(row)
+    return EducationOut(id=str(row.id), created_at=row.created_at, **payload.model_dump())
 
 
 @router.delete("/education/{row_id}", status_code=204)
 async def delete_education(
     row_id: str, user: CurrentUser, db: AsyncSession = Depends(get_db)
 ) -> None:
-    row = await db.scalar(
-        select(Education).where(Education.id == row_id, Education.user_id == user["id"])
-    )
-    if not row:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
+    row = await verify_object_ownership(db, Education, row_id, user["id"])
     await db.delete(row)
     await db.commit()
 
@@ -414,11 +443,7 @@ async def add_experience(
 async def update_experience(
     row_id: str, payload: ExperienceIn, user: CurrentUser, db: AsyncSession = Depends(get_db)
 ):
-    row = await db.scalar(
-        select(Experience).where(Experience.id == row_id, Experience.user_id == user["id"])
-    )
-    if not row:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
+    row = await verify_object_ownership(db, Experience, row_id, user["id"])
     for key, value in payload.model_dump().items():
         setattr(row, key, value)
     await db.commit()
@@ -429,11 +454,7 @@ async def update_experience(
 async def delete_experience(
     row_id: str, user: CurrentUser, db: AsyncSession = Depends(get_db)
 ) -> None:
-    row = await db.scalar(
-        select(Experience).where(Experience.id == row_id, Experience.user_id == user["id"])
-    )
-    if not row:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
+    row = await verify_object_ownership(db, Experience, row_id, user["id"])
     await db.delete(row)
     await db.commit()
 
@@ -467,9 +488,7 @@ async def add_skill(payload: SkillIn, user: CurrentUser, db: AsyncSession = Depe
 
 @router.delete("/skills/{row_id}", status_code=204)
 async def delete_skill(row_id: str, user: CurrentUser, db: AsyncSession = Depends(get_db)) -> None:
-    row = await db.scalar(select(Skill).where(Skill.id == row_id, Skill.user_id == user["id"]))
-    if not row:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
+    row = await verify_object_ownership(db, Skill, row_id, user["id"])
     await db.delete(row)
     await db.commit()
 

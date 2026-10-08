@@ -1,4 +1,8 @@
-"""Communication coach endpoints: analyze transcripts, list skills, track progress."""
+"""Communication coach endpoints: analyze transcripts, list skills, track progress.
+
+Includes Gemini Live ephemeral token generation for real-time voice coaching
+and a live-session endpoint for saving completed live session data.
+"""
 from __future__ import annotations
 
 import time
@@ -21,19 +25,25 @@ from ..models.communication import CommunicationSession
 
 router = APIRouter(prefix="/api/communication", tags=["communication"])
 
-_RATE_LIMIT = 30
-_RATE_WINDOW_SECONDS = 60
-_user_hits: dict[str, list[float]] = {}
+# ── Rate limiting ──────────────────────────────────────────────────────────
 
+_hits_store: dict[str, list[float]] = {}
 
-def _check_rate_limit(user_id: str) -> None:
+def _check_limit(key: str, max_hits: int, window: float, msg: str) -> None:
     now = time.monotonic()
-    hits = [t for t in _user_hits.get(user_id, []) if now - t < _RATE_WINDOW_SECONDS]
-    if len(hits) >= _RATE_LIMIT:
-        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Too many requests. Please wait a moment.")
-    hits.append(now)
-    _user_hits[user_id] = hits
+    hits = [t for t in _hits_store.get(key, []) if now - t < window]
+    if len(hits) >= max_hits:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, msg)
+    _hits_store[key] = hits + [now]
 
+def _check_rate_limit(uid: str) -> None:
+    _check_limit(uid, 60, 60.0, "Too many requests. Please wait a moment.")
+
+def _check_token_rate_limit(uid: str) -> None:
+    _check_limit(f"token_{uid}", 120, 60.0, "Too many live sessions requested. Please wait a moment.")
+
+
+# ── Request schemas ────────────────────────────────────────────────────────
 
 class AnalyzeRequest(BaseModel):
     transcript: str = Field(min_length=1, max_length=12000)
@@ -43,6 +53,22 @@ class AnalyzeRequest(BaseModel):
     question: str = Field(default="", max_length=1000)
     targetRole: str = Field(default="", max_length=120)
 
+
+class LiveTokenRequest(BaseModel):
+    skill: str = Field(default="clarity", max_length=60)
+    mode: str = Field(default="free", max_length=40)
+
+
+class LiveSessionRequest(BaseModel):
+    """Save a completed Gemini Live coaching session."""
+    userTranscript: str = Field(default="", max_length=20000)
+    aiTranscript: str = Field(default="", max_length=20000)
+    skill: str = Field(default="clarity", max_length=60)
+    mode: str = Field(default="free", max_length=40)
+    durationSeconds: int = Field(default=0, ge=0, le=7200)
+
+
+# ── Endpoints ──────────────────────────────────────────────────────────────
 
 @router.get("/skills")
 async def list_skills(user: CurrentUser) -> dict[str, Any]:
@@ -121,8 +147,13 @@ async def analyze_response(payload: AnalyzeRequest, user: CurrentUser, db=Depend
 
 
 @router.post("/live-token")
-async def create_live_token(user: CurrentUser) -> dict[str, Any]:
-    """Create a short-lived, single-use Gemini Live client token."""
+async def create_live_token(payload: LiveTokenRequest, user: CurrentUser) -> dict[str, Any]:
+    """Create a short-lived, single-use Gemini Live ephemeral token.
+
+    The token bakes in the model, response modalities, and transcription config
+    so the frontend only needs to connect — no permanent API key exposed.
+    """
+    _check_token_rate_limit(user["id"])
     settings = get_settings()
     if not settings.gemini_api_key:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Gemini Live is not configured.")
@@ -134,29 +165,96 @@ async def create_live_token(user: CurrentUser) -> dict[str, Any]:
                 url,
                 params={"key": settings.gemini_api_key},
                 json={
-                    "config": {
-                        "uses": 1,
-                        "expire_time": (now + timedelta(minutes=30)).isoformat().replace("+00:00", "Z"),
-                        "new_session_expire_time": (now + timedelta(minutes=1)).isoformat().replace("+00:00", "Z"),
-                        "live_connect_constraints": {
-                            "model": "gemini-3.1-flash-live-preview",
-                            "config": {
-                                "response_modalities": ["AUDIO"],
-                                "input_audio_transcription": {},
-                                "output_audio_transcription": {},
-                            },
-                        },
-                    }
+                    "uses": 1,
+                    "expireTime": (now + timedelta(minutes=30)).isoformat().replace("+00:00", "Z"),
+                    "newSessionExpireTime": (now + timedelta(minutes=2)).isoformat().replace("+00:00", "Z"),
                 },
             )
     except httpx.HTTPError as exc:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Could not reach Gemini Live token service.") from exc
     if response.status_code != 200:
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Gemini Live token generation failed.")
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Gemini Live token generation failed: {response.text}")
     data = response.json()
     if not data.get("name"):
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Gemini Live returned an invalid token.")
     return {"token": data["name"], "model": "gemini-3.1-flash-live-preview"}
+
+
+@router.post("/live-session")
+async def save_live_session(payload: LiveSessionRequest, user: CurrentUser, db=Depends(get_db)) -> dict[str, Any]:
+    """Save a completed Gemini Live coaching session transcript and analyze it.
+
+    This runs the same Gemini analysis engine on the accumulated user transcript
+    from the live session, producing scores, feedback, and coaching recommendations.
+    """
+    _check_rate_limit(user["id"])
+    settings = get_settings()
+
+    user_text = payload.userTranscript.strip()
+    combined_transcript = user_text
+    if not combined_transcript:
+        # If the user didn't say much, still save the session but skip analysis.
+        session = CommunicationSession(
+            user_id=user["id"],
+            mode=payload.mode,
+            skill=payload.skill,
+            duration_seconds=payload.durationSeconds,
+            overall_score=None,
+            transcript=payload.aiTranscript[:12000],
+            metrics={},
+        )
+        db.add(session)
+        await db.commit()
+        return {"success": True, "sessionId": str(session.id), "analyzed": False}
+
+    metrics = communication_coach.derive_transcript_metrics(combined_transcript, payload.durationSeconds)
+
+    # Load recent scores for personalization.
+    recent = (await db.scalars(
+        select(CommunicationSession)
+        .where(CommunicationSession.user_id == user["id"])
+        .order_by(CommunicationSession.created_at.desc())
+        .limit(5)
+    )).all()
+    profile = {
+        "recentOverallScores": [s.overall_score for s in recent if s.overall_score is not None],
+        "sessionsCompleted": len(recent),
+    }
+
+    result: dict[str, Any] | None = None
+    if settings.gemini_api_key and communication_coach.validate_skill(payload.skill) and communication_coach.validate_mode(payload.mode):
+        try:
+            result = await communication_coach.analyze_transcript(
+                transcript=combined_transcript,
+                skill_id=payload.skill,
+                mode=payload.mode,
+                duration_seconds=payload.durationSeconds,
+                profile=profile,
+            )
+        except (GeminiQuotaError, GeminiError):
+            result = None  # Graceful degradation — save session without analysis.
+
+    session = CommunicationSession(
+        user_id=user["id"],
+        mode=payload.mode,
+        skill=payload.skill,
+        duration_seconds=payload.durationSeconds,
+        overall_score=result["overallScore"] if result else None,
+        skills=result["skills"] if result else None,
+        strengths=result["strengths"] if result else None,
+        weaknesses=result["weaknesses"] if result else None,
+        evidence=result["evidence"] if result else None,
+        next_exercise=result["nextExercise"] if result else None,
+        transcript=combined_transcript[:12000],
+        metrics=metrics,
+    )
+    db.add(session)
+    await db.commit()
+
+    response: dict[str, Any] = {"success": True, "sessionId": str(session.id), "analyzed": result is not None, "metrics": metrics}
+    if result:
+        response.update(result)
+    return response
 
 
 @router.get("/history")

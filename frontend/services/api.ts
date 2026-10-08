@@ -11,6 +11,33 @@ export interface UserOut {
   email_verified: boolean;
 }
 
+export interface ProfileOut {
+  id: string;
+  email: string;
+  full_name: string | null;
+  phone: string | null;
+  location: string | null;
+  birth_date: string | null;
+  target_role: string | null;
+  bio: string | null;
+  subscription_plan: string;
+  subscription_status: string;
+  interviews_conducted: number;
+  resources_count: number;
+  upcoming_interviews_count: number;
+  mock_interviews_count: number;
+  onboarding_completed: boolean;
+}
+
+export interface ProfileIn {
+  full_name?: string | null;
+  phone?: string | null;
+  location?: string | null;
+  birth_date?: string | null;
+  target_role?: string | null;
+  bio?: string | null;
+}
+
 export interface EducationEntry {
   id: string;
   school: string;
@@ -34,6 +61,14 @@ export interface SkillEntry {
   id: string;
   name: string;
   level: number;
+}
+
+export interface CertificateEntry {
+  id: string;
+  name: string;
+  cert_id: string | null;
+  link: string | null;
+  storage_key?: string | null;
 }
 
 export interface Preferences {
@@ -96,6 +131,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const apiClient = {
   me: () => request<UserOut>("/auth/me"),
+  sync: () => request<UserOut>("/auth/sync", { method: "POST" }),
+
+  // Profile
+  getProfile: () => request<ProfileOut>("/auth/profile"),
+  updateProfile: (payload: ProfileIn) =>
+    request<ProfileOut>("/auth/profile", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
 
   // Onboarding wizard state
   getWizardState: () => request<WizardState>("/onboarding/state"),
@@ -115,6 +159,7 @@ export const apiClient = {
    */
   postLoginDestination: async (): Promise<"/onboarding" | "/dashboard"> => {
     try {
+      await apiClient.sync();
       const wizard = await apiClient.getWizardState();
       return wizard.finished ? "/dashboard" : "/onboarding";
     } catch {
@@ -151,6 +196,15 @@ export const apiClient = {
     }),
   deleteSkill: (id: string) =>
     request<void>(`/onboarding/skills/${id}`, { method: "DELETE" }),
+
+  // Certificates
+  listCertificates: () => request<CertificateEntry[]>("/onboarding/certificates"),
+  addCertificate: (entry: { name: string; cert_id?: string | null; link?: string | null }) =>
+    request<CertificateEntry>("/onboarding/certificates", {
+      method: "POST",
+      body: JSON.stringify(entry),
+    }),
+  deleteCertificate: (id: string) => request<void>(`/onboarding/certificates/${id}`, { method: "DELETE" }),
 
   // Preferences
   getPreferences: () => request<Preferences>("/onboarding/preferences"),

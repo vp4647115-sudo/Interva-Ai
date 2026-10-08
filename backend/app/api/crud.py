@@ -24,14 +24,13 @@ from ..schemas.phase3 import (
     SessionStatusUpdate,
 )
 
+from ..core.authorization import verify_object_ownership
+
 router = APIRouter(prefix="/api", tags=["crud"])
 
 
 async def _get_owned(db: AsyncSession, model, row_id: str, user_id: str):
-    row = await db.scalar(select(model).where(model.id == row_id, model.user_id == user_id))
-    if not row:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
-    return row
+    return await verify_object_ownership(db, model, row_id, user_id)
 
 
 # --- Resumes -----------------------------------------------------------------

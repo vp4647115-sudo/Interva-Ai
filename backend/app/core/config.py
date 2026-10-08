@@ -3,11 +3,12 @@ from __future__ import annotations
 
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", extra="forbid")
 
     app_name: str = "InterviewAI API"
     environment: str = "development"
@@ -37,10 +38,19 @@ class Settings(BaseSettings):
 
     # Database
     database_url: str = "sqlite+aiosqlite:///./interviai.db"
+    mongodb_url: str = "mongodb://localhost:27017"
+    mongodb_db_name: str = "interviai"
 
     # Gemini AI (server-only; never expose to the frontend)
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-3.1-pro-preview"
+    gemini_model: str = "gemini-3.8-flash"
+
+    @field_validator("gemini_model", mode="before")
+    @classmethod
+    def _default_gemini_model(cls, value: str | None) -> str:
+        # An empty GEMINI_MODEL= in .env overrides Pydantic's field default.
+        # Treat it as unspecified so AI calls always use a valid model name.
+        return value.strip() if isinstance(value, str) and value.strip() else "gemini-3.8-flash"
 
     # Theirstack job data (server-only)
     theirstack_api_key: str = ""
@@ -54,7 +64,7 @@ class Settings(BaseSettings):
     smtp_user: str = ""
     smtp_password: str = ""
     admin_email: str = ""
-    email_from_name: str = "Inter AI"
+    email_from_name: str = "Interview AI"
 
     # Public application URL used in email links (never hardcode localhost).
     app_url: str = "http://localhost:3000"

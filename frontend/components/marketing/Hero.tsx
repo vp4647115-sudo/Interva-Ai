@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { AvatarStack, TestimonialRow } from "@/components/ui/SocialProof";
 import { PillLink } from "@/components/ui/PillButton";
 
@@ -37,10 +38,11 @@ export function Hero() {
             aria-hidden
             className="absolute -inset-4 rounded-card bg-gradient-to-br from-primary/20 to-pink-accent/10 blur-2xl"
           />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=800&q=80&auto=format&fit=crop"
             alt="Candidate practicing a mock interview on a video call"
+            width={800}
+            height={600}
             className="relative w-full max-w-md rounded-card object-cover shadow-modal aspect-[4/3]"
           />
           <div className="absolute -bottom-5 -left-5 rounded-card bg-surface px-5 py-3 shadow-card">

@@ -40,6 +40,25 @@ export interface CommAnalysis {
   };
 }
 
+export interface LiveSessionResult {
+  success: boolean;
+  sessionId: string;
+  analyzed: boolean;
+  metrics?: CommAnalysis["metrics"];
+  overallScore?: number;
+  skills?: Record<string, number>;
+  strengths?: string[];
+  weaknesses?: string[];
+  evidence?: CommAnalysis["evidence"];
+  nextExercise?: CommAnalysis["nextExercise"];
+  coachMessage?: string;
+  correction?: string;
+  explanation?: string;
+  betterVersion?: string;
+  retryPrompt?: string;
+  nextQuestion?: string;
+}
+
 export interface CommProgress {
   sessions: {
     id: string;
@@ -87,6 +106,13 @@ export const communicationApi = {
   listSkills: () => request<{ skills: CommSkill[]; modes: CommMode[] }>("/skills"),
   analyze: (input: { transcript: string; skill: string; mode: string; durationSeconds: number; question?: string; targetRole?: string }) =>
     request<CommAnalysis>("/analyze", { method: "POST", body: JSON.stringify(input) }),
+  saveLiveSession: (input: {
+    userTranscript: string;
+    aiTranscript: string;
+    skill: string;
+    mode: string;
+    durationSeconds: number;
+  }) => request<LiveSessionResult>("/live-session", { method: "POST", body: JSON.stringify(input) }),
   history: () => request<CommProgress>("/history"),
   deleteHistory: () => request<{ success: boolean }>("/history", { method: "DELETE" }),
 };
@@ -97,3 +123,4 @@ export function scoreLabel(score: number): string {
   if (score >= 50) return "Developing";
   return "Keep Practicing";
 }
+

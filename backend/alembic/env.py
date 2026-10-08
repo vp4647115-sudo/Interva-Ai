@@ -11,7 +11,7 @@ from sqlalchemy import pool
 from app.core.config import get_settings
 from app.db.session import Base
 from app.models import communication
-from app.models import onboarding, phase3, profile  # noqa: F401  (register models)
+from app.models import onboarding, phase3, profile  # registers all ORM models with Base.metadata
 
 config = context.config
 if config.config_file_name is not None:

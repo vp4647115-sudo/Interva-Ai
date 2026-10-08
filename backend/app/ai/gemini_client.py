@@ -1,6 +1,7 @@
 """Server-only Gemini adapter. The API key never leaves the backend."""
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 from typing import Any
@@ -18,6 +19,10 @@ class GeminiError(RuntimeError):
 
 class GeminiQuotaError(GeminiError):
     """Raised when the configured Gemini project has exhausted its quota."""
+
+
+class GeminiTemporaryError(GeminiError):
+    """Raised when Gemini is temporarily unavailable and retrying may help."""
 
 
 def _extract_json(text: str) -> dict[str, Any]:
@@ -59,15 +64,15 @@ async def generate_structured(
 
     try:
         async with httpx.AsyncClient(timeout=90) as client:
-            resp = await client.post(
-                url,
-                params={"key": settings.gemini_api_key},
-                json=payload,
-            )
+            for attempt in range(3):
+                resp = await client.post(url, params={"key": settings.gemini_api_key}, json=payload)
+                if resp.status_code != 503 or attempt == 2:
+                    break
+                await asyncio.sleep(attempt + 1)
     except httpx.RequestError as exc:
-        raise GeminiError("Could not reach the Gemini API. Please try again shortly.") from exc
+        raise GeminiTemporaryError("Could not reach the Gemini API. Please try again shortly.") from exc
     if resp.status_code != 200:
-        error = GeminiQuotaError if resp.status_code == 429 else GeminiError
+        error = GeminiQuotaError if resp.status_code == 429 else GeminiTemporaryError if resp.status_code >= 500 else GeminiError
         raise error(f"Gemini API error {resp.status_code}: {resp.text[:300]}")
     data = resp.json()
 

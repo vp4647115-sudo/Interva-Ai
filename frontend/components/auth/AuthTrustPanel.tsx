@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { TestimonialRow } from "@/components/ui/SocialProof";
 import Link from "next/link";
 
@@ -17,7 +18,7 @@ export function AuthTrustPanel() {
       {/* distinct auth header */}
       <header className="relative flex items-center justify-between px-12 py-8 text-white">
         <Link href="/" className="text-xl font-extrabold tracking-tight">
-          Interview<span className="text-pink-accent">AI</span>
+          Interv<span className="text-pink-accent">Ai</span>
         </Link>
         <span className="rounded-pill border border-white/30 px-4 py-1.5 text-xs font-semibold">
           Trusted by 12,000+ candidates
@@ -36,10 +37,12 @@ export function AuthTrustPanel() {
             <li>✓ Structured scores with written evidence</li>
             <li>✓ Personalized practice plan after every session</li>
           </ul>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=600&q=80&auto=format&fit=crop"
-            alt="Professional heading into an interview"
+          <Image
+            src="/candidate-interview.svg"
+            alt="Candidate preparing confidently for an interview"
+            width={600}
+            height={375}
+            priority
             className="aspect-[16/10] w-full rounded-card object-cover shadow-modal"
           />
           <TestimonialRow quote="I walked into my real interview feeling ready" author="James L." />

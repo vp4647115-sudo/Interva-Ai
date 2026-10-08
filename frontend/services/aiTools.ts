@@ -72,3 +72,16 @@ export const evaluateMockAnswer = (payload: {
   answer: string;
   difficulty: "easy" | "medium" | "hard";
 }) => aiPost<MockEvaluationResult & { success: boolean }>("/mock/evaluate", payload);
+
+export interface WhiteboardAuditResult {
+  problemStatement: { restatement: string; ambiguities: string[]; scopeDefined: boolean };
+  techStackChoices: { tool: string; reasonable: boolean; alternative: string; tradeoff: string; justified: boolean }[];
+  securityReview: { missing: string[]; covered: string[] };
+  dsaAnalysis: { coreDataStructures: string[]; algorithms: string[]; timeComplexity: string; spaceComplexity: string; optimalAlternative: string };
+  fullGapChecklist: { checklist: { item: string; covered: boolean }[]; topFixPriorities: { rank: number; gap: string; action: string }[] };
+}
+
+export const auditWhiteboardSession = (payload: {
+  problemStatement: string;
+  candidateSolution: string;
+}) => aiPost<WhiteboardAuditResult & { success: boolean }>("/whiteboard/audit", payload);

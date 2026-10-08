@@ -24,6 +24,11 @@ class CandidateProfile(Base):
     supabase_user_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     email: Mapped[str] = mapped_column(String(320), index=True)
     full_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    location: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    birth_date: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    target_role: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    bio: Mapped[str | None] = mapped_column(String(2000), nullable=True)
     consent_terms: Mapped[bool] = mapped_column(default=False)
     consent_analytics: Mapped[bool] = mapped_column(default=False)
 

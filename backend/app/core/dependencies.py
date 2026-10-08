@@ -10,7 +10,7 @@ from typing import Any, Annotated
 
 from fastapi import Depends, HTTPException, status
 
-from .security import get_bearer_token, is_admin_email, verify_firebase_id_token
+from .security import bearer_scheme, get_bearer_token, is_admin_email, verify_firebase_id_token, HTTPAuthorizationCredentials
 
 
 async def get_current_user(
@@ -26,6 +26,26 @@ async def get_current_user(
 
 
 CurrentUser = Annotated[dict[str, Any], Depends(get_current_user)]
+
+
+async def get_optional_user(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)] = None,
+) -> dict[str, Any] | None:
+    if not credentials or not credentials.credentials:
+        return None
+    try:
+        claims = verify_firebase_id_token(credentials.credentials)
+        return {
+            "id": claims["uid"],
+            "email": claims.get("email", ""),
+            "email_verified": claims.get("email_verified", False),
+            "claims": claims,
+        }
+    except Exception:
+        return None
+
+
+OptionalUser = Annotated[dict[str, Any] | None, Depends(get_optional_user)]
 
 
 async def require_mfa_enrolled(user: CurrentUser) -> dict[str, Any]:

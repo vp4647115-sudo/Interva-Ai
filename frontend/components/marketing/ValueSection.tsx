@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 const features = [
   {
     title: "Role-specific questions",
@@ -34,10 +36,11 @@ export function ValueSection() {
             key={f.title}
             className="overflow-hidden rounded-card bg-surface shadow-card transition-transform hover:-translate-y-0.5"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={f.image}
               alt={f.alt}
+              width={600}
+              height={375}
               className="aspect-[16/10] w-full object-cover"
             />
             <div className="p-8">

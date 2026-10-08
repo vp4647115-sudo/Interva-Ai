@@ -42,14 +42,14 @@ class FileOut(BaseModel):
 
 @router.post("/resume", response_model=FileOut)
 async def upload_resume(
+    user: CurrentUser,
     file: UploadFile = File(...),
-    user: CurrentUser = None,
     db: AsyncSession = Depends(get_db),
 ) -> FileOut:
     """Upload a resume file (PDF/DOCX) to the user's cloud folder."""
     contents = await file.read()
     try:
-        ext = validate_file(file.content_type or "", len(contents), RESUME_TYPES)
+        ext = validate_file(file.content_type or "", len(contents), RESUME_TYPES, data=contents)
         key = upload_user_file(
             user["id"], contents, file.content_type or "", folder="resumes", extension=ext
         )
@@ -77,13 +77,13 @@ async def upload_resume(
 
 @router.post("/image", response_model=FileOut)
 async def upload_image(
+    user: CurrentUser,
     file: UploadFile = File(...),
-    user: CurrentUser = None,
 ) -> FileOut:
     """Upload an image (JPG/PNG/WebP) to the user's cloud folder."""
     contents = await file.read()
     try:
-        ext = validate_file(file.content_type or "", len(contents), IMAGE_TYPES)
+        ext = validate_file(file.content_type or "", len(contents), IMAGE_TYPES, data=contents)
         key = upload_user_file(
             user["id"], contents, file.content_type or "", folder="images", extension=ext
         )
@@ -97,7 +97,7 @@ async def upload_image(
 @router.get("/url")
 async def get_download_url(
     storageKey: str,
-    user: CurrentUser = None,
+    user: CurrentUser,
 ) -> dict[str, Any]:
     """Get a fresh time-limited URL for one of the user's own files.
     The key must start with the caller's own prefix — no cross-user access."""
@@ -109,18 +109,17 @@ async def get_download_url(
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
 
 
+from ..core.authorization import verify_object_ownership
+
 @router.delete("/resume/{row_id}", status_code=204)
 async def delete_resume_file(
     row_id: str,
-    user: CurrentUser = None,
+    user: CurrentUser,
     db: AsyncSession = Depends(get_db),
 ) -> None:
     """Delete a resume record AND its cloud file (user-scoped)."""
-    row = await db.scalar(
-        select(Resume).where(Resume.id == row_id, Resume.user_id == user["id"])
-    )
-    if not row:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
+    user_id = user["id"] if user else ""
+    row = await verify_object_ownership(db, Resume, row_id, user_id)
     if row.storage_key:
         try:
             delete_user_file(row.storage_key)

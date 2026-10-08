@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { onAuthStateChanged } from "firebase/auth";
 import { apiClient, WizardState } from "@/services/api";
+import { firebaseAuth } from "@/lib/firebase/auth";
 import { Skeleton } from "@/components/ui/States";
 
 /**
@@ -15,7 +17,11 @@ export default function RequireOnboarding({ children }: { children: React.ReactN
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    const unsub = onAuthStateChanged(firebaseAuth, async (user) => {
+      if (!user) {
+        if (!cancelled) router.replace("/auth/login");
+        return;
+      }
       try {
         const wizard: WizardState = await apiClient.getWizardState();
         if (!cancelled && !wizard.finished) {
@@ -24,11 +30,14 @@ export default function RequireOnboarding({ children }: { children: React.ReactN
         }
         if (!cancelled) setChecked(true);
       } catch {
-        // Not signed in or backend unreachable — send to login.
+        // Backend unreachable or token verification failed — send to login.
         if (!cancelled) router.replace("/auth/login");
       }
-    })();
-    return () => { cancelled = true; };
+    });
+    return () => {
+      cancelled = true;
+      unsub();
+    };
   }, [router]);
 
   if (!checked) {

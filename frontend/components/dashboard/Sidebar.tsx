@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+
+const SIDEBAR_COLLAPSED_KEY = "intervai-sidebar-collapsed";
 
 type NavItem = { label: string; icon: JSX.Element; active?: boolean };
 type NavGroup = { title: string; items: NavItem[] };
@@ -132,12 +134,34 @@ const groups: NavGroup[] = [
           </>
         ),
       },
+      {
+        label: "Live Training",
+        icon: icon(
+          <>
+            <rect x="2" y="4" width="20" height="14" rx="3" />
+            <circle cx="12" cy="11" r="3" />
+            <path d="M12 4v3M7 20h10" />
+          </>
+        ),
+      },
     ],
   },
 ];
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    setCollapsed(window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true");
+  }, []);
+
+  const toggleCollapsed = () => {
+    setCollapsed((current) => {
+      const next = !current;
+      window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next));
+      return next;
+    });
+  };
 
   return (
     <aside
@@ -153,7 +177,7 @@ export default function Sidebar() {
           </a>
         )}
         <button
-          onClick={() => setCollapsed((c) => !c)}
+          onClick={toggleCollapsed}
           aria-label="Toggle sidebar"
           className="rounded-lg p-1.5 text-ink-secondary hover:bg-surface-alt hover:text-ink-primary"
         >
@@ -194,6 +218,8 @@ export default function Sidebar() {
                   "Interview Buddy": "/interview-buddy",
                   "Mock Interviews": "/mock-interviews",
                   "Build Communication": "/communication",
+                  "Live Training": "/communication/live-training",
+                  "My Profile": "/profile",
                 };
                 const href = routes[item.label];
                 return (
@@ -220,8 +246,9 @@ export default function Sidebar() {
 
       {/* User footer */}
       <div className="border-t border-border p-3">
-        <button
-          className={`flex w-full items-center gap-3 rounded-xl px-2 py-2 hover:bg-surface-alt ${
+        <Link
+          href="/profile"
+          className={`flex w-full items-center gap-3 rounded-xl px-2 py-2 hover:bg-surface-alt transition-colors ${
             collapsed ? "justify-center" : ""
           }`}
         >
@@ -241,10 +268,10 @@ export default function Sidebar() {
           {!collapsed && (
             <>
               <span className="flex-1 truncate text-left text-sm font-bold text-ink-primary">
-                Vaibhav Patil
+                My Profile
               </span>
-              <span className="rounded-pill bg-surface-alt px-2.5 py-0.5 text-[11px] font-bold text-ink-secondary">
-                Free
+              <span className="rounded-pill bg-primary/10 px-2.5 py-0.5 text-[11px] font-bold text-primary">
+                View
               </span>
               <svg
                 viewBox="0 0 24 24"
@@ -254,11 +281,11 @@ export default function Sidebar() {
                 strokeLinecap="round"
                 className="h-4 w-4 text-ink-muted"
               >
-                <path d="m7 9 5-5 5 5M7 15l5 5 5-5" />
+                <path d="m9 18 6-6-6-6" />
               </svg>
             </>
           )}
-        </button>
+        </Link>
       </div>
     </aside>
   );

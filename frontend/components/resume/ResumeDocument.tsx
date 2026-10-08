@@ -4,10 +4,12 @@ export default function ResumeDocument({ draft, template }: { draft: ResumeDraft
   const accent = template === "modern" ? "#6C4CFF" : template === "professional" ? "#0F766E" : "#111111";
   const headingClass = template === "minimal" ? "uppercase tracking-[0.18em]" : "uppercase tracking-[0.1em]";
 
+  const cleanName = (draft.name || "").startsWith("%PDF-") ? "Professional Candidate" : (draft.name || "Your Name");
+
   return (
     <article className={`resume-paper resume-${template} bg-white p-8 text-[#17202a] shadow-card sm:p-10`} style={{ "--resume-accent": accent } as React.CSSProperties}>
       <header className="border-b-2 border-[var(--resume-accent)] pb-5">
-        <h1 className="text-3xl font-extrabold tracking-tight">{draft.name || "Your Name"}</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight">{cleanName}</h1>
         <p className="mt-1 text-base font-semibold" style={{ color: accent }}>{draft.role || "Target role"}</p>
         <p className="mt-3 text-xs text-[#59636e]">
           {[draft.email, draft.phone, draft.location, draft.linkedin].filter(Boolean).join("  |  ") || "email@example.com  |  City, Country"}
