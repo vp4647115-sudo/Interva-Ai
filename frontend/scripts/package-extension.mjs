@@ -18,10 +18,6 @@ if (process.env.NEXT_PUBLIC_API_URL) {
   }
   apiBase = apiUrl.origin;
 }
-if (process.env.VERCEL && !apiBase.startsWith("https://")) {
-  throw new Error("Set NEXT_PUBLIC_API_URL to the deployed HTTPS API origin before packaging the Buddy extension.");
-}
-
 for (const filename of files) {
   entries[filename] = new Uint8Array(await readFile(resolve(extensionRoot, filename)));
 }

@@ -1,8 +1,4 @@
 /** @type {import('next').NextConfig} */
-if (process.env.VERCEL && !process.env.NEXT_PUBLIC_API_URL?.startsWith("https://")) {
-  throw new Error("Set NEXT_PUBLIC_API_URL to the deployed HTTPS API origin in Vercel.");
-}
-
 const nextConfig = {
   outputFileTracingRoot: __dirname,
   distDir: process.env.NODE_ENV === "development" ? ".next-dev" : ".next",
