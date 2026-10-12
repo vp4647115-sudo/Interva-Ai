@@ -16,28 +16,13 @@ const nextConfig = {
     ],
   },
 
-  // Cross-Origin-Opener-Policy must NOT be same-origin, otherwise Firebase's
-  // Google sign-in popup cannot be inspected ("policy would block the
-  // window.closed call") and login silently hangs.
-  async headers() {
-    return [
-      {
-        source: "/:path*",
-        headers: [
-          { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
-        ],
-      },
-    ];
-  },
-
-  async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: "http://127.0.0.1:8000/api/:path*",
-      },
-    ];
-  },
+  // Do not set Cross-Origin-Opener-Policy here. The default `unsafe-none`
+  // policy lets Firebase's cross-origin Google sign-in popup call
+  // `window.closed` without browser warnings or a blocked sign-in flow.
+  //
+  // API calls intentionally go straight to NEXT_PUBLIC_API_URL. A rewrite to
+  // 127.0.0.1 works only on a developer's machine; in Vercel it becomes an
+  // unreachable private host and turns every /api request into a 404.
 
   webpack: (config, { isServer }) => {
     if (!isServer) {

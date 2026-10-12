@@ -4,13 +4,15 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FirebaseError } from "firebase/app";
+import { getRedirectResult } from "firebase/auth";
 
 import { AuthCard } from "@/components/ui/AuthCard";
 import { AuthTrustPanel } from "@/components/auth/AuthTrustPanel";
 import { PillButton } from "@/components/ui/PillButton";
-import { registerWithEmail, loginWithGoogle } from "@/lib/firebase/auth";
+import { firebaseAuth, registerWithEmail, loginWithGoogle } from "@/lib/firebase/auth";
+import { useRouter } from "next/navigation";
 
 const schema = z.object({
   fullName: z.string().min(1, "Name is required"),
@@ -52,6 +54,7 @@ function friendlyError(err: unknown): string {
 }
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -60,6 +63,14 @@ export default function RegisterPage() {
     handleSubmit,
     formState: { errors },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
+
+  useEffect(() => {
+    void getRedirectResult(firebaseAuth)
+      .then((credential) => {
+        if (credential?.user) router.replace("/dashboard");
+      })
+      .catch((err) => setServerError(friendlyError(err)));
+  }, [router]);
 
   async function onSubmit(data: FormData) {
     setServerError(null);
@@ -79,7 +90,6 @@ export default function RegisterPage() {
     setBusy(true);
     try {
       await loginWithGoogle();
-      window.location.href = "/dashboard";
     } catch (err) {
       setServerError(friendlyError(err));
     } finally {
