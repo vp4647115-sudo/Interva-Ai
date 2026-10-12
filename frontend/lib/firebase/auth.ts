@@ -10,7 +10,6 @@ import {
   sendPasswordResetEmail,
   setPersistence,
   signInWithEmailAndPassword,
-  signInWithPopup,
   signInWithRedirect,
   signOut,
   updateProfile,
@@ -69,23 +68,10 @@ export async function loginWithEmail(email: string, password: string) {
 export async function loginWithGoogle() {
   const auth = getFirebaseAuth();
   const provider = new GoogleAuthProvider();
-  try {
-    return await signInWithPopup(auth, provider);
-  } catch (err) {
-    // Some browsers/extensions enforce Cross-Origin-Opener-Policy which blocks
-    // reading `window.closed` on the popup (auth/popup-blocked or the popup
-    // just never resolves). Fall back to a full-page redirect flow.
-    const code = (err as { code?: string })?.code ?? "";
-    if (
-      code === "auth/popup-blocked" ||
-      code === "auth/cancelled-popup-request" ||
-      code === "auth/popup-closed-by-user"
-    ) {
-      await signInWithRedirect(auth, provider);
-      return null as never; // page navigates away; result handled after redirect
-    }
-    throw err;
-  }
+  // Redirect auth deliberately avoids a cross-origin popup. This prevents
+  // browsers from blocking Firebase while it checks the popup's `window.closed`
+  // value under Cross-Origin-Opener-Policy.
+  await signInWithRedirect(auth, provider);
 }
 
 export async function resetPassword(email: string) {
