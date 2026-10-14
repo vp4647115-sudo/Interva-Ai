@@ -13,8 +13,21 @@ class Settings(BaseSettings):
     app_name: str = "InterviewAI API"
     environment: str = "development"
 
-    # CORS: restricted to known frontend origins (rule.md §6)
+    # CORS: comma-separated exact origins, without trailing slashes.
+    # Keep FRONTEND_ORIGIN for backwards compatibility with existing deployments.
     frontend_origin: str = "http://localhost:3000"
+    cors_origins: str = ""
+
+    @property
+    def allowed_origins(self) -> list[str]:
+        configured = self.cors_origins or self.frontend_origin
+        origins = [origin.strip().rstrip("/") for origin in configured.split(",") if origin.strip()]
+        # Keep the live frontend reachable even if an older API deployment has
+        # not yet received the FRONTEND_ORIGIN environment variable.
+        production_origin = "https://intervai.vpnpro.in"
+        if production_origin not in origins:
+            origins.append(production_origin)
+        return origins
 
     # Supabase (legacy — retained for storage/DB integration; auth now via Firebase)
     supabase_url: str = ""
