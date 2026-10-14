@@ -72,7 +72,11 @@ app.add_middleware(
                         if settings.environment != "production" else None),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-Requested-With"],
+    # Firebase and browser clients may add preflighted headers beyond the
+    # core auth/content headers. Starlette reflects requested headers when
+    # credentials are enabled, so accepting all requested headers avoids a
+    # deployment-only preflight failure without exposing another origin.
+    allow_headers=["*"],
     expose_headers=["Content-Type"],
     max_age=86400,
 )

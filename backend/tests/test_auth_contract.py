@@ -45,9 +45,9 @@ def test_preflight_allows_production_origin(client: TestClient) -> None:
     assert response.status_code == 200
     assert response.headers["access-control-allow-origin"] == "http://localhost:3000"
     assert "POST" in response.headers["access-control-allow-methods"]
-    assert "Authorization" in response.headers["access-control-allow-headers"]
+    assert "authorization" in response.headers["access-control-allow-headers"].lower()
     assert response.headers["access-control-allow-credentials"] == "true"
-    assert response.headers.get_all("access-control-allow-origin") == ["http://localhost:3000"]
+    assert response.headers.get("access-control-allow-origin") == "http://localhost:3000"
 
 
 def test_error_response_includes_cors_and_rejects_other_origins(client: TestClient) -> None:
