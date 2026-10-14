@@ -13,8 +13,15 @@ class Settings(BaseSettings):
     app_name: str = "InterviewAI API"
     environment: str = "development"
 
-    # CORS: restricted to known frontend origins (rule.md §6)
+    # CORS: comma-separated exact origins, without trailing slashes.
+    # Keep FRONTEND_ORIGIN for backwards compatibility with existing deployments.
     frontend_origin: str = "http://localhost:3000"
+    cors_origins: str = ""
+
+    @property
+    def allowed_origins(self) -> list[str]:
+        raw = self.cors_origins or self.frontend_origin
+        return [origin.strip().rstrip("/") for origin in raw.split(",") if origin.strip()]
 
     # Supabase (legacy — retained for storage/DB integration; auth now via Firebase)
     supabase_url: str = ""

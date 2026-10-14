@@ -63,25 +63,16 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 
 # Keep CORS outside Starlette's error middleware so even uncaught 500 responses
 # carry the headers browsers need to expose the actual API response.
-# Local Next.js dev servers often auto-increment when ports 3000-3002 are in use,
-# so we allow localhost + 127.0.0.1 on any common development port in addition to
-# the configured production origin.
+# Register CORS last so it wraps the entire application, including error responses.
+# Exact production origins are env-driven; localhost is allowed only for development.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        settings.frontend_origin,
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://localhost:3002",
-        "http://localhost:3003",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001",
-        "http://127.0.0.1:3002",
-        "http://127.0.0.1:3003",
-    ],
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_origins=settings.allowed_origins,
+    allow_origin_regex=(r"https?://(localhost|127\.0\.0\.1)(:\d+)?"
+                        if settings.environment != "production" else None),
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Requested-With"],
     expose_headers=["Content-Type"],
+    max_age=86400,
 )
