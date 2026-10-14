@@ -20,8 +20,14 @@ class Settings(BaseSettings):
 
     @property
     def allowed_origins(self) -> list[str]:
-        raw = self.cors_origins or self.frontend_origin
-        return [origin.strip().rstrip("/") for origin in raw.split(",") if origin.strip()]
+        configured = self.cors_origins or self.frontend_origin
+        origins = [origin.strip().rstrip("/") for origin in configured.split(",") if origin.strip()]
+        # Keep the live frontend reachable even if an older API deployment has
+        # not yet received the FRONTEND_ORIGIN environment variable.
+        production_origin = "https://intervai.vpnpro.in"
+        if production_origin not in origins:
+            origins.append(production_origin)
+        return origins
 
     # Supabase (legacy — retained for storage/DB integration; auth now via Firebase)
     supabase_url: str = ""
