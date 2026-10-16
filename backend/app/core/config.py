@@ -24,9 +24,13 @@ class Settings(BaseSettings):
         origins = [origin.strip().rstrip("/") for origin in configured.split(",") if origin.strip()]
         # Keep the live frontend reachable even if an older API deployment has
         # not yet received the FRONTEND_ORIGIN environment variable.
-        production_origin = "https://intervai.vpnpro.in"
-        if production_origin not in origins:
-            origins.append(production_origin)
+        # Keep the deployed frontend explicitly allowed even when an older
+        # deployment has stale or missing FRONTEND_ORIGIN configuration.
+        production_origins = {
+            "https://intervai.vpnpro.in",
+            "https://www.intervai.vpnpro.in",
+        }
+        origins.extend(origin for origin in production_origins if origin not in origins)
         return origins
 
     # Supabase (legacy — retained for storage/DB integration; auth now via Firebase)

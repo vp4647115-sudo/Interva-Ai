@@ -7,15 +7,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { FirebaseError } from "firebase/app";
-import { getRedirectResult } from "firebase/auth";
 
 import { AuthCard } from "@/components/ui/AuthCard";
 import { AuthTrustPanel } from "@/components/auth/AuthTrustPanel";
 import { PillButton } from "@/components/ui/PillButton";
-import { firebaseAuth, loginWithEmail, loginWithGoogle } from "@/lib/firebase/auth";
-import { apiClient } from "@/services/api";
+import { loginWithEmail, loginWithGoogle } from "@/lib/firebase/auth";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -51,23 +49,15 @@ export default function LoginPage() {
     formState: { errors },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
-  useEffect(() => {
-    // Firebase returns to this page after Google redirect authentication.
-    // Route only when this navigation was caused by a completed sign-in.
-    void getRedirectResult(firebaseAuth)
-      .then(async (credential) => {
-        if (credential?.user) router.replace(await apiClient.postLoginDestination());
-      })
-      .catch((err) => setServerError(friendlyError(err)));
-  }, [router]);
-
   async function onSubmit(data: FormData) {
     setServerError(null);
     setBusy(true);
     try {
       await loginWithEmail(data.email, data.password);
-      // First-time users → onboarding wizard; returning users → dashboard.
-      router.push(await apiClient.postLoginDestination());
+      // Navigate immediately after Firebase confirms the session. The protected
+      // route performs the onboarding check without trapping the user on login
+      // when the API is temporarily unavailable or CORS is misconfigured.
+      router.replace("/dashboard");
     } catch (err) {
       setServerError(friendlyError(err));
     } finally {
@@ -80,6 +70,7 @@ export default function LoginPage() {
     setBusy(true);
     try {
       await loginWithGoogle();
+      router.replace("/dashboard");
     } catch (err) {
       setServerError(friendlyError(err));
     } finally {
