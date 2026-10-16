@@ -30,8 +30,10 @@ export default function RequireOnboarding({ children }: { children: React.ReactN
         }
         if (!cancelled) setChecked(true);
       } catch {
-        // Backend unreachable or token verification failed — send to login.
-        if (!cancelled) router.replace("/auth/login");
+        // A signed-in Firebase user must not be sent back to login just because
+        // the API is temporarily unavailable or its CORS config is stale.
+        // Let the protected page render and show its own API error state.
+        if (!cancelled) setChecked(true);
       }
     });
     return () => {
