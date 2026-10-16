@@ -64,16 +64,14 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 # Keep CORS outside Starlette's error middleware so even uncaught 500 responses
 # carry the headers browsers need to expose the actual API response.
 # Register CORS last so it wraps the entire application, including error responses.
-# Exact production origins are env-driven; localhost is allowed only for development.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
-    # Keep the hosted frontend covered even when the API deployment has a
-    # stale or missing FRONTEND_ORIGIN value. The regex also covers www.
+    # Keep both hosted and local origins covered. This is intentionally not
+    # conditional on ENVIRONMENT because a stale/missing deployment variable
+    # must not turn every browser request into an opaque CORS failure.
     allow_origin_regex=(
-        r"https://(www\.)?intervai\.vpnpro\.in"
-        if settings.environment == "production"
-        else r"https?://(localhost|127\.0\.0\.1)(:\d+)?"
+        r"^(https://(www\.)?intervai\.vpnpro\.in|https?://(localhost|127\.0\.0\.1)(:\d+)?)$"
     ),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
