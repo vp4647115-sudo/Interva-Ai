@@ -10,7 +10,7 @@ import {
   sendPasswordResetEmail,
   setPersistence,
   signInWithEmailAndPassword,
-  signInWithRedirect,
+  signInWithPopup,
   signOut,
   updateProfile,
   type Auth,
@@ -68,10 +68,10 @@ export async function loginWithEmail(email: string, password: string) {
 export async function loginWithGoogle() {
   const auth = getFirebaseAuth();
   const provider = new GoogleAuthProvider();
-  // Redirect auth deliberately avoids a cross-origin popup. This prevents
-  // browsers from blocking Firebase while it checks the popup's `window.closed`
-  // value under Cross-Origin-Opener-Policy.
-  await signInWithRedirect(auth, provider);
+  // Complete the auth flow in the current page so users do not depend on
+  // Firebase Hosting's /__/firebase/init.json redirect bootstrap endpoint.
+  const credential = await signInWithPopup(auth, provider);
+  return credential.user;
 }
 
 export async function resetPassword(email: string) {

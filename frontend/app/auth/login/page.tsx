@@ -7,14 +7,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { FirebaseError } from "firebase/app";
-import { getRedirectResult } from "firebase/auth";
 
 import { AuthCard } from "@/components/ui/AuthCard";
 import { AuthTrustPanel } from "@/components/auth/AuthTrustPanel";
 import { PillButton } from "@/components/ui/PillButton";
-import { firebaseAuth, loginWithEmail, loginWithGoogle } from "@/lib/firebase/auth";
+import { loginWithEmail, loginWithGoogle } from "@/lib/firebase/auth";
 import { apiClient } from "@/services/api";
 
 const schema = z.object({
@@ -51,16 +50,6 @@ export default function LoginPage() {
     formState: { errors },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
-  useEffect(() => {
-    // Firebase returns to this page after Google redirect authentication.
-    // Route only when this navigation was caused by a completed sign-in.
-    void getRedirectResult(firebaseAuth)
-      .then(async (credential) => {
-        if (credential?.user) router.replace(await apiClient.postLoginDestination());
-      })
-      .catch((err) => setServerError(friendlyError(err)));
-  }, [router]);
-
   async function onSubmit(data: FormData) {
     setServerError(null);
     setBusy(true);
@@ -80,6 +69,7 @@ export default function LoginPage() {
     setBusy(true);
     try {
       await loginWithGoogle();
+      router.push(await apiClient.postLoginDestination());
     } catch (err) {
       setServerError(friendlyError(err));
     } finally {
