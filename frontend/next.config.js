@@ -20,9 +20,15 @@ const nextConfig = {
   // policy lets Firebase's cross-origin Google sign-in popup call
   // `window.closed` without browser warnings or a blocked sign-in flow.
   //
-  // API calls intentionally go straight to NEXT_PUBLIC_API_URL. A rewrite to
-  // 127.0.0.1 works only on a developer's machine; in Vercel it becomes an
-  // unreachable private host and turns every /api request into a 404.
+  // Proxy browser API calls through the frontend origin in production. This
+  // avoids deployment-only CORS/preflight failures while preserving direct
+  // localhost requests during development.
+  async rewrites() {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    return apiUrl
+      ? [{ source: "/backend-api/:path*", destination: `${apiUrl}/:path*` }]
+      : [];
+  },
 
   webpack: (config, { isServer }) => {
     if (!isServer) {

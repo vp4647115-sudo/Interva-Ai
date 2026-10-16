@@ -52,7 +52,10 @@ export async function searchJobs(
 ): Promise<JobSearchResponse> {
   const { getIdToken } = await import("@/lib/firebase/auth");
   const token = await getIdToken();
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const API_BASE =
+  process.env.NODE_ENV === "production"
+    ? "/backend-api"
+    : process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
   const requestFilters = {
     ...filters,
     remote: filters.remote || null,
