@@ -1,6 +1,9 @@
 /** Typed client for the AI tool endpoints (cover letter, buddy, mock interviews). */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_BASE =
+  process.env.NODE_ENV === "production"
+    ? "/backend-api"
+    : process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 async function aiPost<T>(path: string, body: unknown): Promise<T> {
   const { getIdToken } = await import("@/lib/firebase/auth");
