@@ -68,8 +68,13 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
-    allow_origin_regex=(r"https?://(localhost|127\.0\.0\.1)(:\d+)?"
-                        if settings.environment != "production" else None),
+    # Keep the hosted frontend covered even when the API deployment has a
+    # stale or missing FRONTEND_ORIGIN value. The regex also covers www.
+    allow_origin_regex=(
+        r"https://(www\.)?intervai\.vpnpro\.in"
+        if settings.environment == "production"
+        else r"https?://(localhost|127\.0\.0\.1)(:\d+)?"
+    ),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     # Firebase and browser clients may add preflighted headers beyond the
