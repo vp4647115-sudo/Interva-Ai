@@ -14,7 +14,6 @@ import { AuthCard } from "@/components/ui/AuthCard";
 import { AuthTrustPanel } from "@/components/auth/AuthTrustPanel";
 import { PillButton } from "@/components/ui/PillButton";
 import { loginWithEmail, loginWithGoogle } from "@/lib/firebase/auth";
-import { apiClient } from "@/services/api";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -55,8 +54,10 @@ export default function LoginPage() {
     setBusy(true);
     try {
       await loginWithEmail(data.email, data.password);
-      // First-time users → onboarding wizard; returning users → dashboard.
-      router.push(await apiClient.postLoginDestination());
+      // Navigate immediately after Firebase confirms the session. The protected
+      // route performs the onboarding check without trapping the user on login
+      // when the API is temporarily unavailable or CORS is misconfigured.
+      router.replace("/dashboard");
     } catch (err) {
       setServerError(friendlyError(err));
     } finally {
@@ -69,7 +70,7 @@ export default function LoginPage() {
     setBusy(true);
     try {
       await loginWithGoogle();
-      router.push(await apiClient.postLoginDestination());
+      router.replace("/dashboard");
     } catch (err) {
       setServerError(friendlyError(err));
     } finally {
