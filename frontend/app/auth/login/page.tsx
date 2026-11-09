@@ -26,6 +26,12 @@ const schema = z.object({
 });
 type FormData = z.infer<typeof schema>;
 
+function queueLoginNotification() {
+  void apiClient.sendLoginNotification().catch((err: unknown) => {
+    console.error("Could not queue the login notification email.", err);
+  });
+}
+
 function friendlyError(err: unknown): string {
   if (err instanceof FirebaseError) {
     switch (err.code) {
@@ -75,6 +81,7 @@ export default function LoginPage() {
     setBusy(true);
     try {
       await loginWithEmail(data.email, data.password);
+      queueLoginNotification();
       // Navigate immediately after Firebase confirms the session. The protected
       // route performs the onboarding check without trapping the user on login
       // when the API is temporarily unavailable or CORS is misconfigured.
@@ -91,6 +98,7 @@ export default function LoginPage() {
     setBusy(true);
     try {
       await loginWithGoogle();
+      queueLoginNotification();
       router.replace(await apiClient.postLoginDestination());
     } catch (err) {
       setServerError(friendlyError(err));

@@ -135,6 +135,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const apiClient = {
   me: () => request<UserOut>("/auth/me"),
   sync: () => request<UserOut>("/auth/sync", { method: "POST" }),
+  sendLoginNotification: () =>
+    request<{ message: string }>("/auth/login-notification", { method: "POST" }),
 
   // Profile
   getProfile: () => request<ProfileOut>("/auth/profile"),

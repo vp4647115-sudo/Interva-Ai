@@ -14,6 +14,7 @@
 - Set the backend's `FRONTEND_ORIGIN` to the deployed frontend origin, such as `https://www.example.com`. The current FastAPI CORS configuration permits this one configured origin plus localhost; Vercel preview domains will not be able to call the API unless the backend CORS policy is extended to allow them.
 - Add the production frontend hostname to Firebase Authentication's **Authorized domains**. Add a Vercel preview hostname only if preview deployments need Firebase authentication.
 - Confirm the deployed API is reachable over HTTPS and its auth, onboarding, and other required routes are available before testing the frontend.
+- Configure backend `SMTP_USER` and `SMTP_PASSWORD` so successful sign-ins can queue the HTML account-security notification email. `SMTP_HOST`, `SMTP_PORT`, and `ADMIN_EMAIL` can override the existing mail defaults.
 
 Firebase's public web configuration is currently defined in `lib/firebase/config.ts`; no Firebase client environment variables are required by the frontend at build time.
 

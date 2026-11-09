@@ -46,6 +46,83 @@ def _escape(value: str) -> str:
         .replace(">", "&gt;")
         .replace('"', "&quot;")
     )
+
+
+def generate_login_notification_email(
+    *,
+    user_name: str | None,
+    email: str,
+    login_time: str,
+    app_url: str,
+) -> EmailMessage:
+    """Build a security notification for a successful account sign-in."""
+    name = _escape((user_name or "there").strip() or "there")
+    user_email = _escape(email.strip())
+    safe_login_time = _escape(login_time)
+    home_url = _escape(app_url.rstrip("/"))
+    reset_url = _escape(f"{app_url.rstrip('/')}/auth/reset-password")
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New sign-in to Interview AI</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;color:#172033;">
+  <div style="display:none;font-size:1px;color:#f4f7fb;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">
+    Your Interview AI account was just accessed.
+  </div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f7fb;padding:36px 16px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background:#fff;border-radius:16px;overflow:hidden;">
+        <tr><td style="padding:28px 36px;text-align:center;border-bottom:1px solid #eef1f6;">
+          <div style="font-size:25px;font-weight:700;color:#111827;">Interview<span style="color:#6366f1;">AI</span></div>
+        </td></tr>
+        <tr><td style="padding:38px 36px 18px;">
+          <p style="margin:0 0 12px;color:#6366f1;font-size:13px;font-weight:700;letter-spacing:1px;">ACCOUNT SECURITY</p>
+          <h1 style="margin:0;font-size:27px;line-height:1.3;color:#111827;">New sign-in to your account</h1>
+          <p style="margin:16px 0 0;font-size:16px;line-height:1.65;color:#667085;">Hi {name}, we noticed a successful sign-in to your Interview AI account.</p>
+        </td></tr>
+        <tr><td style="padding:10px 36px 24px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f8f9ff;border:1px solid #e4e7ff;border-radius:12px;">
+            <tr><td style="padding:20px 22px;">
+              <p style="margin:0 0 14px;font-size:12px;font-weight:700;color:#4f46e5;">SIGN-IN DETAILS</p>
+              <p style="margin:0 0 10px;font-size:14px;color:#475467;"><strong>Account:</strong> {user_email}</p>
+              <p style="margin:0;font-size:14px;color:#475467;"><strong>Time:</strong> {safe_login_time}</p>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="padding:0 36px 28px;">
+          <p style="margin:0;font-size:14px;line-height:1.65;color:#667085;">If this was you, no action is needed. If you don't recognize this activity, secure your account by resetting your password.</p>
+        </td></tr>
+        <tr><td style="padding:0 36px 38px;text-align:center;">
+          <a href="{reset_url}" style="display:inline-block;padding:14px 26px;border-radius:9px;background:#6366f1;color:#fff;text-decoration:none;font-size:15px;font-weight:700;">Secure my account</a>
+          <p style="margin:18px 0 0;font-size:13px;color:#98a2b3;">You can also visit <a href="{home_url}" style="color:#6366f1;">Interview AI</a>.</p>
+        </td></tr>
+        <tr><td style="padding:22px 36px;background:#fafbfc;border-top:1px solid #eef1f6;text-align:center;">
+          <p style="margin:0;font-size:13px;font-weight:700;color:#344054;">Interview<span style="color:#6366f1;">AI</span></p>
+          <p style="margin:7px 0 0;font-size:12px;color:#98a2b3;">A sign-in alert to help keep your account safe.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
+
+    text = (
+        f"New sign-in to your Interview AI account\n\n"
+        f"Hi {user_name or 'there'}, we noticed a successful sign-in.\n\n"
+        f"Account: {email}\n"
+        f"Time: {login_time}\n\n"
+        "If this was you, no action is needed. If you don't recognize this activity, "
+        f"secure your account: {app_url.rstrip('/')}/auth/reset-password\n"
+    )
+    return EmailMessage(
+        subject="New sign-in to your Interview AI account",
+        html=html,
+        text=text,
+    )
 def generate_welcome_email(
     *,
     user_name: str | None,
@@ -333,3 +410,28 @@ def dispatch_welcome_email(
     thread.start()
     return thread
 
+
+def dispatch_login_notification_email(
+    *,
+    to_email: str,
+    user_name: str | None,
+    login_time: str,
+) -> threading.Thread:
+    """Send a sign-in alert in the background without delaying the login route."""
+    settings = get_settings()
+    message = generate_login_notification_email(
+        user_name=user_name,
+        email=to_email,
+        login_time=login_time,
+        app_url=settings.app_url,
+    )
+
+    def _run() -> None:
+        try:
+            send_email_sync(to_email, message)
+        except EmailSendError as exc:
+            logger.error("Login notification email to %s failed: %s", to_email, exc)
+
+    thread = threading.Thread(target=_run, daemon=True)
+    thread.start()
+    return thread
