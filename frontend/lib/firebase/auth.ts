@@ -28,6 +28,8 @@ import { firebaseConfig } from "./config";
 
 let _app: FirebaseApp | null = null;
 let _auth: Auth | null = null;
+let _persistenceReady: Promise<void> = Promise.resolve();
+let _persistenceError: unknown = null;
 
 function getFirebaseApp(): FirebaseApp {
   if (_app) return _app;
@@ -38,9 +40,22 @@ function getFirebaseApp(): FirebaseApp {
 function getFirebaseAuth(): Auth {
   if (_auth) return _auth;
   _auth = getAuth(getFirebaseApp());
-  // Best-effort persistence — silence errors server-side.
-  void setPersistence(_auth, browserLocalPersistence).catch(() => {});
+  _persistenceReady = setPersistence(_auth, browserLocalPersistence).catch((error: unknown) => {
+    _persistenceError = error;
+    console.error("[firebase/auth] Failed to configure browser persistence.", error);
+  });
   return _auth;
+}
+
+async function getReadyFirebaseAuth(): Promise<Auth> {
+  const auth = getFirebaseAuth();
+  await _persistenceReady;
+  if (_persistenceError) throw _persistenceError;
+  return auth;
+}
+
+export async function prepareFirebaseAuth(): Promise<void> {
+  await getReadyFirebaseAuth();
 }
 
 // For call-sites that import `firebaseAuth` directly (e.g. onAuthStateChanged)
@@ -66,12 +81,12 @@ export async function loginWithEmail(email: string, password: string) {
 }
 
 export async function loginWithGoogle() {
-  const auth = getFirebaseAuth();
+  const auth = await getReadyFirebaseAuth();
   const provider = new GoogleAuthProvider();
   // Complete the auth flow in the current page so users do not depend on
   // Firebase Hosting's /__/firebase/init.json redirect bootstrap endpoint.
-  const credential = await signInWithPopup(auth, provider);
-  return credential.user;
+  const result = await signInWithPopup(auth, provider);
+  return result.user;
 }
 
 export async function resetPassword(email: string) {
@@ -83,7 +98,7 @@ export async function logout() {
 }
 
 export async function getIdToken(): Promise<string | null> {
-  const auth = getFirebaseAuth();
+  const auth = await getReadyFirebaseAuth();
   // Firebase restores browserLocalPersistence asynchronously. Requests made
   // during that window otherwise omit Authorization and produce a misleading
   // backend 401 on protected routes such as /onboarding/state.
