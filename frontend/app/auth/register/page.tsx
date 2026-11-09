@@ -6,13 +6,17 @@ import { z } from "zod";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { FirebaseError } from "firebase/app";
-import { getRedirectResult } from "firebase/auth";
 
 import { AuthCard } from "@/components/ui/AuthCard";
 import { AuthTrustPanel } from "@/components/auth/AuthTrustPanel";
 import { PillButton } from "@/components/ui/PillButton";
-import { firebaseAuth, registerWithEmail, loginWithGoogle } from "@/lib/firebase/auth";
+import {
+  registerWithEmail,
+  loginWithGoogle,
+  prepareFirebaseAuth,
+} from "@/lib/firebase/auth";
 import { useRouter } from "next/navigation";
+import { apiClient } from "@/services/api";
 
 const schema = z.object({
   fullName: z.string().min(1, "Name is required"),
@@ -45,6 +49,10 @@ function friendlyError(err: unknown): string {
         return "Network error. Check your connection and try again.";
       case "auth/popup-closed-by-user":
         return "Google sign-in was cancelled.";
+      case "auth/popup-blocked":
+        return "Your browser blocked the Google sign-in window. Allow pop-ups for this site and try again.";
+      case "auth/unauthorized-domain":
+        return "This domain is not authorized for Google sign-in. Add it to Firebase Authentication's authorized domains.";
       default:
         return err.message;
     }
@@ -58,6 +66,7 @@ export default function RegisterPage() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
   const {
     register,
     handleSubmit,
@@ -65,12 +74,13 @@ export default function RegisterPage() {
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
   useEffect(() => {
-    void getRedirectResult(firebaseAuth)
-      .then((credential) => {
-        if (credential?.user) router.replace("/dashboard");
-      })
-      .catch((err) => setServerError(friendlyError(err)));
-  }, [router]);
+    void prepareFirebaseAuth()
+      .then(() => setAuthReady(true))
+      .catch((err) => {
+        setServerError(friendlyError(err));
+        setAuthReady(true);
+      });
+  }, []);
 
   async function onSubmit(data: FormData) {
     setServerError(null);
@@ -90,6 +100,7 @@ export default function RegisterPage() {
     setBusy(true);
     try {
       await loginWithGoogle();
+      router.replace(await apiClient.postLoginDestination());
     } catch (err) {
       setServerError(friendlyError(err));
     } finally {
@@ -107,7 +118,7 @@ export default function RegisterPage() {
           <button
             type="button"
             onClick={onGoogle}
-            disabled={busy}
+            disabled={busy || !authReady}
             className="mt-6 flex w-full items-center justify-center gap-3 rounded-pill border border-border bg-white px-6 py-3 text-sm font-semibold hover:bg-surface-alt disabled:opacity-50"
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden>

@@ -9,12 +9,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FirebaseError } from "firebase/app";
-import { getRedirectResult } from "firebase/auth";
 
 import { AuthCard } from "@/components/ui/AuthCard";
 import { AuthTrustPanel } from "@/components/auth/AuthTrustPanel";
 import { PillButton } from "@/components/ui/PillButton";
-import { firebaseAuth, loginWithEmail, loginWithGoogle } from "@/lib/firebase/auth";
+import {
+  loginWithEmail,
+  loginWithGoogle,
+  prepareFirebaseAuth,
+} from "@/lib/firebase/auth";
 import { apiClient } from "@/services/api";
 
 const schema = z.object({
@@ -34,17 +37,24 @@ function friendlyError(err: unknown): string {
         return "Too many attempts. Please try again later.";
       case "auth/popup-closed-by-user":
         return "Google sign-in was cancelled.";
+      case "auth/popup-blocked":
+        return "Your browser blocked the Google sign-in window. Allow pop-ups for this site and try again.";
+      case "auth/unauthorized-domain":
+        return "This domain is not authorized for Google sign-in. Add it to Firebase Authentication's authorized domains.";
+      case "auth/network-request-failed":
+        return "Network error. Check your connection and try again.";
       default:
         return err.message;
     }
   }
-  return "Something went wrong. Please try again.";
+  return err instanceof Error ? err.message : "Something went wrong. Please try again.";
 }
 
 export default function LoginPage() {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
   const {
     register,
     handleSubmit,
@@ -52,14 +62,13 @@ export default function LoginPage() {
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
   useEffect(() => {
-    // Firebase returns to this page after Google redirect authentication.
-    // Route only when this navigation was caused by a completed sign-in.
-    void getRedirectResult(firebaseAuth)
-      .then(async (credential) => {
-        if (credential?.user) router.replace(await apiClient.postLoginDestination());
-      })
-      .catch((err) => setServerError(friendlyError(err)));
-  }, [router]);
+    void prepareFirebaseAuth()
+      .then(() => setAuthReady(true))
+      .catch((err) => {
+        setServerError(friendlyError(err));
+        setAuthReady(true);
+      });
+  }, []);
 
   async function onSubmit(data: FormData) {
     setServerError(null);
@@ -80,6 +89,7 @@ export default function LoginPage() {
     setBusy(true);
     try {
       await loginWithGoogle();
+      router.replace(await apiClient.postLoginDestination());
     } catch (err) {
       setServerError(friendlyError(err));
     } finally {
@@ -97,7 +107,7 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={onGoogle}
-            disabled={busy}
+            disabled={busy || !authReady}
             className="mt-6 flex w-full items-center justify-center gap-3 rounded-pill border border-border bg-white px-6 py-3 text-sm font-semibold hover:bg-surface-alt disabled:opacity-50"
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden>
