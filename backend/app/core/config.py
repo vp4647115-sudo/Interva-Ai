@@ -58,6 +58,15 @@ class Settings(BaseSettings):
     mongodb_url: str = "mongodb://localhost:27017"
     mongodb_db_name: str = "interviai"
 
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def _async_database_url(cls, value: str) -> str:
+        if value.startswith("postgres://"):
+            return value.replace("postgres://", "postgresql+asyncpg://", 1)
+        if value.startswith("postgresql://"):
+            return value.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return value
+
     # Gemini AI (server-only; never expose to the frontend)
     gemini_api_key: str = ""
     gemini_model: str = "gemini-3.8-flash"
