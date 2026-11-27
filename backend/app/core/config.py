@@ -2,9 +2,55 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def normalize_database_url(value: str) -> str:
+    """Adapt common hosted PostgreSQL URLs for SQLAlchemy's asyncpg driver."""
+    if value.startswith("postgres://"):
+        value = "postgresql+asyncpg://" + value.removeprefix("postgres://")
+    elif value.startswith("postgresql://"):
+        value = "postgresql+asyncpg://" + value.removeprefix("postgresql://")
+
+    if not value.startswith("postgresql+asyncpg://"):
+        return value
+
+    parts = urlsplit(value)
+    query = parse_qsl(parts.query, keep_blank_values=True)
+    if any(key == "sslmode" for key, _ in query):
+        has_ssl = any(key == "ssl" for key, _ in query)
+        query = [
+            (key, val)
+            for key, val in query
+            if key != "sslmode" or not has_ssl
+        ]
+        if not has_ssl:
+            query = [
+                ("ssl" if key == "sslmode" else key, val)
+                for key, val in query
+            ]
+    return urlunsplit(parts._replace(query=urlencode(query, doseq=True)))
+
+
+def validate_deployed_database_url(
+    database_url: str,
+    environment: str,
+    *,
+    is_vercel: bool,
+    is_railway: bool = False,
+) -> None:
+    """Require persistent PostgreSQL instead of ephemeral SQLite in deployments."""
+    production = environment.strip().lower() in {"prod", "production"}
+    deployed = production or is_vercel or is_railway
+    if deployed and not database_url.lower().startswith("postgresql+asyncpg://"):
+        raise RuntimeError(
+            "Deployed environments require DATABASE_URL set to a managed "
+            "PostgreSQL connection URI. SQLite and the Supabase project/API "
+            "URL (https://<project-ref>.supabase.co) are not database URLs."
+        )
 
 
 class Settings(BaseSettings):
@@ -60,12 +106,8 @@ class Settings(BaseSettings):
 
     @field_validator("database_url", mode="before")
     @classmethod
-    def _async_database_url(cls, value: str) -> str:
-        if value.startswith("postgres://"):
-            return value.replace("postgres://", "postgresql+asyncpg://", 1)
-        if value.startswith("postgresql://"):
-            return value.replace("postgresql://", "postgresql+asyncpg://", 1)
-        return value
+    def _normalize_database_url(cls, value: str) -> str:
+        return normalize_database_url(value)
 
     # Gemini AI (server-only; never expose to the frontend)
     gemini_api_key: str = ""
