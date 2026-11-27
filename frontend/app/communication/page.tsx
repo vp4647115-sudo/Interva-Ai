@@ -7,6 +7,7 @@ import Sidebar from "@/components/dashboard/Sidebar";
 import RequireOnboarding from "@/components/auth/RequireOnboarding";
 import { communicationApi, scoreLabel, type CommAnalysis, type CommMode, type CommSkill } from "@/services/communication";
 import { useSpeechRecognition } from "@/lib/speech/useSpeechRecognition";
+import { API_BASE } from "@/lib/api-base";
 
 const CONSENT_KEY = "intervai-comm-consent";
 const STARTER_QUESTIONS = [
@@ -19,7 +20,7 @@ async function speakQuestion(text: string) {
   try {
     const { getIdToken } = await import("@/lib/firebase/auth");
     const token = await getIdToken();
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/communication/voice`, {
+    const response = await fetch(`${API_BASE}/api/communication/voice`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: JSON.stringify({ text }),

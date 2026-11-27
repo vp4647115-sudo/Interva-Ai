@@ -1,9 +1,7 @@
+import { API_BASE } from "@/lib/api-base";
+
 // Typed API client. Auth is handled by Firebase on the client; requests to the
 // FastAPI backend carry a Firebase ID token in the Authorization header.
-const API_BASE =
-  process.env.NODE_ENV === "production"
-    ? "/backend-api"
-    : process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 import { getIdToken } from "@/lib/firebase/auth";
 

@@ -20,14 +20,11 @@ const nextConfig = {
   // policy lets Firebase's cross-origin Google sign-in popup call
   // `window.closed` without browser warnings or a blocked sign-in flow.
   //
-  // Proxy browser API calls through the frontend origin in production. This
-  // avoids deployment-only CORS/preflight failures while preserving direct
-  // localhost requests during development.
+  // Route browser API calls through the frontend origin in production to avoid
+  // cross-origin preflight failures. The destination is the deployed FastAPI host.
   async rewrites() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    return apiUrl
-      ? [{ source: "/backend-api/:path*", destination: `${apiUrl}/:path*` }]
-      : [];
+    const apiUrl = new URL(process.env.NEXT_PUBLIC_API_URL ?? "https://nextapi.vpnpro.in").origin;
+    return [{ source: "/backend-api/:path*", destination: `${apiUrl}/:path*` }];
   },
 
   webpack: (config, { isServer }) => {

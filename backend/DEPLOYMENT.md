@@ -19,6 +19,6 @@ Keep all service-account keys, API keys, passwords, and database credentials in 
 
 ## Connect Vercel
 
-In the Vercel frontend project, set `NEXT_PUBLIC_API_URL` to the backend's public origin only, such as `https://<backend-domain>` -- not the frontend URL, not a path ending in `/api`, and no trailing slash. Set it for the Production environment (and Preview if previews should use the API), then redeploy so Next.js creates its `/backend-api/:path*` rewrite using the new value.
+The frontend reads `NEXT_PUBLIC_API_URL` from the Vercel environment and proxies `/backend-api/:path*` to that origin. Keep it set to `https://nextapi.vpnpro.in/`; the frontend normalizes the trailing slash. Do not use `https://api.intervai.vpnpro.in`, which aliases to the frontend and produces 404s. Deploy the frontend after merging the API proxy fix.
 
-After redeploy, the browser should call the frontend's `/backend-api/api/...` path and Vercel should forward it to the Railway backend's `/api/...` route. A `401` on an auth route without a Firebase token means the API route is reachable; a `404` usually means the rewrite target or backend deployment is still wrong.
+After deployment, the browser should call the frontend's `/backend-api/api/...` path and Vercel should forward it to the FastAPI `/api/...` route. A `401` on an auth route without a Firebase token means the API route is reachable; a `404` usually means the frontend proxy target is wrong or the frontend has not been redeployed with the fix.

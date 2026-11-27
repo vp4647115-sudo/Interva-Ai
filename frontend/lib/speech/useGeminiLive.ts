@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GoogleGenAI } from "@google/genai";
 import type { FaceAnalysisSummary } from "./useFaceEmotionScanner";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+import { API_BASE } from "@/lib/api-base";
 const LIVE_MODEL = "gemini-3.1-flash-live-preview";
 
 const COACH_SYSTEM_INSTRUCTION = `You are InterAI Live Communication Coach.
