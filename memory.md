@@ -27,6 +27,7 @@ Keep entries short, newest first. Log every major schema change, feature complet
 
 | Date | Change | Notes |
 |---|---|---|
+| 2026-11-27 | **Phase 6 Container Hardening Completed** — Converted the frontend Docker image to a production `next build`/`next start` multi-stage image, added backend/frontend health checks, made Compose wait for backend health, and added CI Node heap capacity. | Frontend production build completed successfully; Docker CLI was unavailable locally for container startup validation. |
 | 2026-10-05 | **Phase 6 Deployment Foundation Added** — Created Docker containerization and CI workflow scaffolding for backend + frontend (`docker-compose.yml`, `backend/Dockerfile`, `frontend/Dockerfile`, `.github/workflows/ci.yml`) so deployment work has a repeatable starting point. | This completes the missing deployment setup skeleton and gives a path for production container builds and automated validation. |
 | 2026-09-14 | **Phase 5 Testing & Quality Assurance Completed** — Built end-to-end integration pipeline tests (`backend/tests/test_phase5_integration.py`), multi-tenant data boundary security tests, and rate-limiting enforcement tests (`backend/tests/test_rate_limiting.py`). All 40/40 backend tests pass with 100% success rate across 14 test modules. | Fully satisfies Phase 5 testing and quality assurance requirements. |
 | 2026-09-14 | **Phase 4c RAG Knowledge Base Implemented** — Built sliding window chunking & term-vector retrieval engine (`backend/app/ai/rag_engine.py`), pre-seeded technical knowledge bases (System Design, DSA, STAR behavioral), and integrated RAG retrieval into `context_builder.py`. All 37/37 backend tests pass cleanly. | Fully satisfies Phase 4c RAG knowledge grounding requirements. |
@@ -43,9 +44,9 @@ Keep entries short, newest first. Log every major schema change, feature complet
 
 ## 3. Currently Working
 
-- **Active phase:** Phase 6 deployment scaffolding completed. Remaining work is environment-specific hardening: add production secrets, tune Docker health checks, and wire real deployment monitors.
+- **Active phase:** Phase 6 deployment foundation completed. Container images now use backend health checks and frontend production builds; CI uses a larger Node heap for reliable builds.
 - **Current file/module:** `docker-compose.yml`, `backend/Dockerfile`, `frontend/Dockerfile`, `.github/workflows/ci.yml`.
-- **What's next:** Finalize environment variables, add production health checks/monitoring, and then move from local container scaffolding to a hosted deployment target.
+- **Remaining deployment work:** provide hosted environment secrets, choose the production database target, and connect hosted monitoring/deployment (Sentry and CI/CD).
 
 
 
