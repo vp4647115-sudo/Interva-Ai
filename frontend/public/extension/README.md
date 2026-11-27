@@ -5,7 +5,7 @@
 1. Download and extract `interv-ai-buddy-extension.zip`.
 2. Open `chrome://extensions` (or `edge://extensions`) and turn on **Developer mode**.
 3. Choose **Load unpacked** and select the extracted `extension` folder.
-4. Open the Buddy popup, expand **API connection**, verify the HTTPS origin of your FastAPI deployment, and choose **Save API**. The packaged extension is prefilled with `https://nextapi.vpnpro.in`; the browser still asks permission for that API host. Choose **Test connection** to verify `/health`.
+4. Open the Buddy popup, expand **API connection**, verify the HTTPS origin of your FastAPI deployment, and choose **Save API**. The packaged extension is prefilled from `NEXT_PUBLIC_API_URL` (defaulting to `https://nextapi.vpnpro.in`); the browser still asks permission for that API host. Choose **Test connection** to verify `/health`.
 5. Sign in with the email and password for your Interview AI Firebase account. If you normally use Google sign-in, set a password for that account using the Interview AI password reset page first.
 
 ## Use

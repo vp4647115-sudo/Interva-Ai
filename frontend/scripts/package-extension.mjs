@@ -9,7 +9,7 @@ const archivePath = resolve(projectRoot, "public/buddy-extension.zip");
 const files = ["manifest.json", "popup.html", "auth.js", "api.js", "popup.js", "README.md"];
 const entries = {};
 
-const configuredApiUrl = "https://nextapi.vpnpro.in";
+const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL ?? "https://nextapi.vpnpro.in";
 let apiBase = "";
 {
   const apiUrl = new URL(configuredApiUrl);

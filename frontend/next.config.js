@@ -23,7 +23,7 @@ const nextConfig = {
   // Route browser API calls through the frontend origin in production to avoid
   // cross-origin preflight failures. The destination is the deployed FastAPI host.
   async rewrites() {
-    const apiUrl = "https://nextapi.vpnpro.in";
+    const apiUrl = new URL(process.env.NEXT_PUBLIC_API_URL ?? "https://nextapi.vpnpro.in").origin;
     return [{ source: "/backend-api/:path*", destination: `${apiUrl}/:path*` }];
   },
 

@@ -4,8 +4,8 @@
 
 1. Import the repository into Vercel and set **Root Directory** to `frontend`.
 2. Use the Next.js framework preset and Node.js 20.x.
-3. The frontend uses the deployed FastAPI origin `https://nextapi.vpnpro.in`; production browser requests use the same-origin `/backend-api` proxy. The backend host is pinned in the frontend so an old `NEXT_PUBLIC_API_URL` value cannot route requests back to a frontend alias such as `https://api.intervai.vpnpro.in`. No API URL environment variable is needed.
-4. Deploy. `vercel.json` uses `npm ci` and `npm run build`. The build packages `public/buddy-extension.zip` with the same backend origin.
+3. Keep `NEXT_PUBLIC_API_URL` set to your existing FastAPI origin `https://nextapi.vpnpro.in/` in each Vercel environment. The frontend reads this value and normalizes its trailing slash; production browser requests use the same-origin `/backend-api` proxy. Do not point it to the frontend domain or its aliases.
+4. Deploy. `vercel.json` uses `npm ci` and `npm run build`. The build packages `public/buddy-extension.zip` using the same configured backend origin.
 
 Gemini credentials and other server secrets belong on the backend only.
 

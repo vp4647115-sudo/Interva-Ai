@@ -19,6 +19,6 @@ Keep all service-account keys, API keys, passwords, and database credentials in 
 
 ## Connect Vercel
 
-The frontend is configured to proxy `/backend-api/:path*` to `https://nextapi.vpnpro.in`; no frontend API URL environment variable is required. Do not set the proxy target to `https://api.intervai.vpnpro.in`, which aliases to the frontend and produces 404s. Deploy the frontend after merging the API proxy fix.
+The frontend reads `NEXT_PUBLIC_API_URL` from the Vercel environment and proxies `/backend-api/:path*` to that origin. Keep it set to `https://nextapi.vpnpro.in/`; the frontend normalizes the trailing slash. Do not use `https://api.intervai.vpnpro.in`, which aliases to the frontend and produces 404s. Deploy the frontend after merging the API proxy fix.
 
 After deployment, the browser should call the frontend's `/backend-api/api/...` path and Vercel should forward it to the FastAPI `/api/...` route. A `401` on an auth route without a Firebase token means the API route is reachable; a `404` usually means the frontend proxy target is wrong or the frontend has not been redeployed with the fix.
