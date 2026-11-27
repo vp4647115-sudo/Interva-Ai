@@ -4,7 +4,7 @@
 
 1. Import the repository into Vercel and set **Root Directory** to `frontend`.
 2. Use the Next.js framework preset and Node.js 20.x.
-3. Set `NEXT_PUBLIC_API_URL` to the deployed FastAPI origin, for example `https://api.example.com`. Use HTTPS and do not include a trailing slash. Set it for every Vercel environment that should build. Vercel builds fail when this variable is missing.
+3. The frontend defaults to the deployed FastAPI origin `https://nextapi.vpnpro.in`; production browser requests use the same-origin `/backend-api` proxy to avoid CORS/preflight issues. Set `NEXT_PUBLIC_API_URL` only to override the backend (for example, for a local API); use an HTTPS origin for deployed environments.
 4. Deploy. `vercel.json` uses `npm ci` and `npm run build`. The build automatically packages `public/buddy-extension.zip` with the configured API origin.
 
 `NEXT_PUBLIC_API_URL` is a public browser variable, not a place for secrets. Gemini credentials and other server secrets belong on the backend only.

@@ -11,6 +11,7 @@ import SkillPicker from "@/components/resume/SkillPicker";
 import ResumeDocument from "@/components/resume/ResumeDocument";
 import type { ResumeDraft, ResumeTemplate } from "@/components/resume/types";
 import { analysisToDraft, analyzeResumeFile, improveSection, type ResumeAnalysis } from "@/services/resumeAnalysis";
+import { API_BASE } from "@/lib/api-base";
 
 type Screen = "entry" | "upload" | "analyzing" | "results" | "form" | "generating" | "review";
 type Generated = {
@@ -47,7 +48,6 @@ const FIELD_OPTIONS = [
 ];
 
 const emptyDraft: ResumeDraft = { name: "", role: "", email: "", phone: "", location: "", linkedin: "", summary: "", degree: "", school: "", skills: [], experience: [], projects: [] };
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 const ANALYSIS_STAGES = ["Reading document", "Extracting information", "Detecting sections", "Evaluating ATS compatibility", "Generating recommendations"];
 const GENERATION_STAGES = ["Validating your information", "Researching the current job market", "Analyzing your profile", "Selecting the best resume structure", "Writing your resume"];

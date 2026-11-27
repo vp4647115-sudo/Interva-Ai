@@ -79,10 +79,7 @@ export interface CommProgress {
   };
 }
 
-const API_BASE =
-  process.env.NODE_ENV === "production"
-    ? "/backend-api"
-    : process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+import { API_BASE } from "@/lib/api-base";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const { getIdToken } = await import("@/lib/firebase/auth");

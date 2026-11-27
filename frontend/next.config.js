@@ -24,10 +24,8 @@ const nextConfig = {
   // avoids deployment-only CORS/preflight failures while preserving direct
   // localhost requests during development.
   async rewrites() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    return apiUrl
-      ? [{ source: "/backend-api/:path*", destination: `${apiUrl}/:path*` }]
-      : [];
+    const apiUrl = new URL(process.env.NEXT_PUBLIC_API_URL ?? "https://nextapi.vpnpro.in").origin;
+    return [{ source: "/backend-api/:path*", destination: `${apiUrl}/:path*` }];
   },
 
   webpack: (config, { isServer }) => {
