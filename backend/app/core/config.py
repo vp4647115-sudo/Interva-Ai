@@ -20,18 +20,14 @@ def normalize_database_url(value: str) -> str:
 
     parts = urlsplit(value)
     query = parse_qsl(parts.query, keep_blank_values=True)
-    if any(key == "sslmode" for key, _ in query):
-        has_ssl = any(key == "ssl" for key, _ in query)
+    has_sslmode = any(key == "sslmode" for key, _ in query)
+    if not has_sslmode:
         query = [
-            (key, val)
+            ("sslmode" if key == "ssl" else key, val)
             for key, val in query
-            if key != "sslmode" or not has_ssl
         ]
-        if not has_ssl:
-            query = [
-                ("ssl" if key == "sslmode" else key, val)
-                for key, val in query
-            ]
+    else:
+        query = [(key, val) for key, val in query if key != "ssl"]
     return urlunsplit(parts._replace(query=urlencode(query, doseq=True)))
 
 
