@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import { API_BASE } from "@/lib/api-base";
 import { useToast } from "@/components/providers/ToastProvider";
-import { trackEvent } from "@/components/privacy/CookieConsent";
+import { track } from "@/lib/analytics";
 
 type ContactResponse = { message?: string; detail?: string };
 
@@ -37,7 +37,7 @@ export function ContactForm() {
         throw new Error(result.detail || "We couldn't send your message. Please try again.");
       }
       form.reset();
-      trackEvent("contact_form_submit");
+      track("contact_form_success");
       showToast(result.message || "Your message has been sent.", "success");
     } catch (error) {
       showToast(

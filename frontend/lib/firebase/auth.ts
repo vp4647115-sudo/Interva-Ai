@@ -8,6 +8,7 @@ import {
   createUserWithEmailAndPassword,
   deleteUser,
   getAuth,
+  getAdditionalUserInfo,
   getRedirectResult,
   reauthenticateWithCredential,
   reauthenticateWithPopup,
@@ -23,6 +24,7 @@ import {
   type UserCredential,
 } from "firebase/auth";
 import { firebaseConfig } from "./config";
+import { track } from "@/lib/analytics";
 
 // Auth lives entirely in Firebase on the client; the FastAPI backend only ever
 // sees a short-lived ID token which it verifies against Firebase's public keys.
@@ -80,6 +82,7 @@ export async function registerWithEmail(name: string, email: string, password: s
   const cred = await createUserWithEmailAndPassword(auth, email, password);
   await updateProfile(cred.user, { displayName: name });
   await sendEmailVerification(cred.user);
+  track("signup_completed", { method: "email" });
   return cred.user;
 }
 
@@ -97,7 +100,12 @@ export async function loginWithGoogle() {
 
 export async function completeGoogleRedirect(): Promise<UserCredential | null> {
   const auth = await getReadyFirebaseAuth();
-  _googleRedirectResult ??= getRedirectResult(auth);
+  _googleRedirectResult ??= getRedirectResult(auth).then((result) => {
+    if (result && getAdditionalUserInfo(result)?.isNewUser) {
+      track("signup_completed", { method: "google" });
+    }
+    return result;
+  });
   return _googleRedirectResult;
 }
 
