@@ -98,8 +98,6 @@ export default function LoginPage() {
     setBusy(true);
     try {
       await loginWithGoogle();
-      queueLoginNotification();
-      router.replace(await apiClient.postLoginDestination());
     } catch (err) {
       setServerError(friendlyError(err));
     } finally {

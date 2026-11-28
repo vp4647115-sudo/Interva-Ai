@@ -8,9 +8,9 @@ import {
   getAuth,
   sendEmailVerification,
   sendPasswordResetEmail,
+  signInWithRedirect,
   setPersistence,
   signInWithEmailAndPassword,
-  signInWithPopup,
   signOut,
   updateProfile,
   type Auth,
@@ -83,10 +83,7 @@ export async function loginWithEmail(email: string, password: string) {
 export async function loginWithGoogle() {
   const auth = await getReadyFirebaseAuth();
   const provider = new GoogleAuthProvider();
-  // Complete the auth flow in the current page so users do not depend on
-  // Firebase Hosting's /__/firebase/init.json redirect bootstrap endpoint.
-  const result = await signInWithPopup(auth, provider);
-  return result.user;
+  await signInWithRedirect(auth, provider);
 }
 
 export async function resetPassword(email: string) {

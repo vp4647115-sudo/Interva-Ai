@@ -15,8 +15,6 @@ import {
   loginWithGoogle,
   prepareFirebaseAuth,
 } from "@/lib/firebase/auth";
-import { useRouter } from "next/navigation";
-import { apiClient } from "@/services/api";
 
 const schema = z.object({
   fullName: z.string().min(1, "Name is required"),
@@ -28,12 +26,6 @@ const schema = z.object({
   consentAnalytics: z.boolean().optional(),
 });
 type FormData = z.infer<typeof schema>;
-
-function queueLoginNotification() {
-  void apiClient.sendLoginNotification().catch((err: unknown) => {
-    console.error("Could not queue the login notification email.", err);
-  });
-}
 
 function friendlyError(err: unknown): string {
   if (err instanceof FirebaseError) {
@@ -68,7 +60,6 @@ function friendlyError(err: unknown): string {
 }
 
 export default function RegisterPage() {
-  const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -106,8 +97,6 @@ export default function RegisterPage() {
     setBusy(true);
     try {
       await loginWithGoogle();
-      queueLoginNotification();
-      router.replace(await apiClient.postLoginDestination());
     } catch (err) {
       setServerError(friendlyError(err));
     } finally {
