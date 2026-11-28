@@ -1,18 +1,12 @@
 import { Footer } from "@/components/marketing/Footer";
 import { TopNav } from "@/components/marketing/TopNav";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = createPageMetadata({
   title: "Interview Guides | IntervAi",
   description: "Practical, step-by-step guides for HR, technical, coding, fresher, and software developer interviews.",
-  alternates: { canonical: "/interview-guides" },
-  openGraph: { url: "https://intervai.vpnpro.in/interview-guides" },
-  twitter: {
-    card: "summary_large_image",
-    title: "Interview Guides | IntervAi",
-    description: "Practical, step-by-step guides for HR, technical, coding, fresher, and software developer interviews.",
-    images: ["/opengraph-image"],
-  },
-};
+  path: "/interview-guides",
+});
 
 const guides = [
   {

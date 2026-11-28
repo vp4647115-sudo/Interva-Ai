@@ -1,18 +1,12 @@
 import { Footer } from "@/components/marketing/Footer";
 import { TopNav } from "@/components/marketing/TopNav";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = createPageMetadata({
   title: "Help Center | IntervAi",
   description: "Answers, troubleshooting, and tips for getting the most out of Interview AI.",
-  alternates: { canonical: "/help-center" },
-  openGraph: { url: "https://intervai.vpnpro.in/help-center" },
-  twitter: {
-    card: "summary_large_image",
-    title: "Help Center | IntervAi",
-    description: "Answers, troubleshooting, and tips for getting the most out of Interview AI.",
-    images: ["/opengraph-image"],
-  },
-};
+  path: "/help-center",
+});
 
 const helpSections = [
   { title: "Getting Started", items: [

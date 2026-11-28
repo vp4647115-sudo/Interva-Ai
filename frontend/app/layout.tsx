@@ -4,6 +4,8 @@ import "./globals.css";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { ToastProvider } from "@/components/providers/ToastProvider";
 import { CookieConsent } from "@/components/privacy/CookieConsent";
+import { BRAND_NAME, SITE_URL } from "@/lib/site";
+import { AppBreadcrumbs } from "@/components/seo/AppBreadcrumbs";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -12,17 +14,17 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://intervai.vpnpro.in"),
+  metadataBase: new URL(SITE_URL),
   title: "IntervAi — Practice interviews with AI",
   description:
     "Role-specific AI mock interviews with structured feedback, scores, and a personalized practice plan.",
   openGraph: {
     type: "website",
-    siteName: "IntervAi",
+    siteName: BRAND_NAME,
     title: "IntervAi — Practice interviews with AI",
     description:
       "Role-specific AI mock interviews with structured feedback, scores, and a personalized practice plan.",
-    url: "https://intervai.vpnpro.in",
+    url: SITE_URL,
     images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "IntervAi interview preparation" }],
   },
   twitter: {
@@ -32,6 +34,15 @@ export const metadata: Metadata = {
       "Role-specific AI mock interviews with structured feedback, scores, and a personalized practice plan.",
     images: ["/opengraph-image"],
   },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  manifest: "/manifest.webmanifest",
 };
 
 export const viewport: Viewport = {
@@ -49,36 +60,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={jakarta.variable}>
         <QueryProvider>
           <ToastProvider>
+            <AppBreadcrumbs />
             {children}
             <CookieConsent />
           </ToastProvider>
         </QueryProvider>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@graph": [
-                {
-                  "@type": "Organization",
-                  name: "IntervAi",
-                  url: "https://intervai.vpnpro.in",
-                  logo: "https://intervai.vpnpro.in/favicon.ico",
-                  sameAs: [
-                    "https://x.com/vp4647115",
-                    "https://www.linkedin.com/in/vaibhav-patil2032",
-                    "https://github.com/vp4647115-sudo",
-                  ],
-                },
-                {
-                  "@type": "WebSite",
-                  name: "IntervAi",
-                  url: "https://intervai.vpnpro.in",
-                },
-              ],
-            }).replace(/</g, "\\u003c"),
-          }}
-        />
       </body>
     </html>
   );

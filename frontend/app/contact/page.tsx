@@ -1,23 +1,20 @@
 import { Footer } from "@/components/marketing/Footer";
 import { TopNav } from "@/components/marketing/TopNav";
 import { ContactForm } from "@/components/marketing/ContactForm";
+import { createPageMetadata } from "@/lib/seo";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { SITE_URL } from "@/lib/site";
 
-export const metadata = {
+export const metadata = createPageMetadata({
   title: "Contact Interview AI",
   description: "Contact Interview AI for support, partnerships, media, careers, and privacy questions.",
-  alternates: { canonical: "/contact" },
-  openGraph: { url: "https://intervai.vpnpro.in/contact" },
-  twitter: {
-    card: "summary_large_image",
-    title: "Contact Interview AI",
-    description: "Contact Interview AI for support, partnerships, media, careers, and privacy questions.",
-    images: ["/opengraph-image"],
-  },
-};
+  path: "/contact",
+});
 
 export default function ContactPage() {
   return (
     <>
+      <JsonLd data={{ "@context": "https://schema.org", "@type": "ContactPage", name: "Contact Interview AI", url: `${SITE_URL}/contact` }} />
       <TopNav />
       <main className="bg-surface">
         <div className="mx-auto max-w-4xl px-6 py-16 md:py-20">

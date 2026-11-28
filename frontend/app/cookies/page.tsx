@@ -2,19 +2,13 @@ import Link from "next/link";
 import { Footer } from "@/components/marketing/Footer";
 import { TopNav } from "@/components/marketing/TopNav";
 import { CookieSettingsButton } from "@/components/privacy/CookieConsent";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = createPageMetadata({
   title: "Cookie Policy | IntervAi",
   description: "Cookie policy for IntervAi, explaining cookies, consent, analytics, performance, authentication, and your control options.",
-  alternates: { canonical: "/cookies" },
-  openGraph: { url: "https://intervai.vpnpro.in/cookies" },
-  twitter: {
-    card: "summary_large_image",
-    title: "Cookie Policy | IntervAi",
-    description: "Cookie policy for IntervAi, explaining cookies, consent, analytics, performance, authentication, and your control options.",
-    images: ["/opengraph-image"],
-  },
-};
+  path: "/cookies",
+});
 
 export default function CookiesPage() {
   return (
@@ -122,9 +116,9 @@ export default function CookiesPage() {
               <section>
                 <h2 className="text-2xl font-bold text-ink-primary">5. Cookie Consent</h2>
                 <p className="mt-3 leading-7 text-ink-secondary">
-                  The cookie-consent control lets visitors accept or reject optional analytics and change that choice
-                  later. Analytics are not loaded until a visitor opts in. Essential local storage used to remember
-                  this choice does not enable analytics.
+                  The cookie-consent control lets visitors accept, reject, or customize optional analytics and change
+                  that choice later. Analytics are not loaded until a visitor opts in. Essential local storage used
+                  to remember this choice does not enable analytics.
                 </p>
               </section>
 

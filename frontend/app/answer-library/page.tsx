@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import Sidebar from "@/components/dashboard/Sidebar";
+import { Skeleton } from "@/components/ui/States";
 
 type Entry = { id: number; question: string; answer: string };
 
@@ -50,7 +51,12 @@ export default function AnswerLibraryPage() {
           </section>
 
           <div className="mt-6 space-y-3">
-            {!ready ? null : entries.length === 0 ? (
+            {!ready ? (
+              <div aria-label="Loading saved answers" aria-busy="true" className="space-y-3">
+                <Skeleton className="h-28 w-full" />
+                <Skeleton className="h-28 w-full" />
+              </div>
+            ) : entries.length === 0 ? (
               <p className="rounded-card bg-surface p-8 text-center text-sm text-ink-secondary shadow-card">No saved answers yet. Add your first one above.</p>
             ) : (
               entries.map((entry) => (
