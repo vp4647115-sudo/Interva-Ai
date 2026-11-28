@@ -1,12 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  outputFileTracingRoot: __dirname,
+  experimental: {
+    outputFileTracingRoot: __dirname,
+  },
   distDir: process.env.NODE_ENV === "development" ? ".next-dev" : ".next",
 
-  // Vercel handles image optimization automatically.
-  // If you later use next/image with external hosts, add them here.
   images: {
     unoptimized: false,
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       {
         protocol: "https",
@@ -16,13 +17,27 @@ const nextConfig = {
     ],
   },
 
-  // Do not set Cross-Origin-Opener-Policy here. The default `unsafe-none`
-  // policy lets Firebase's cross-origin Google sign-in popup call
-  // `window.closed` without browser warnings or a blocked sign-in flow.
-  //
-  // API calls intentionally go straight to NEXT_PUBLIC_API_URL. A rewrite to
-  // 127.0.0.1 works only on a developer's machine; in Vercel it becomes an
-  // unreachable private host and turns every /api request into a 404.
+  // Rewrites for proxying API calls to FastAPI in local/custom domain setups
+  async rewrites() {
+    if (process.env.VERCEL) {
+      return [];
+    }
+    const backendUrl = process.env.BACKEND_INTERNAL_URL || "http://127.0.0.1:8000";
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${backendUrl}/api/:path*`,
+      },
+      {
+        source: "/docs",
+        destination: `${backendUrl}/docs`,
+      },
+      {
+        source: "/openapi.json",
+        destination: `${backendUrl}/openapi.json`,
+      },
+    ];
+  },
 
   webpack: (config, { isServer }) => {
     if (!isServer) {

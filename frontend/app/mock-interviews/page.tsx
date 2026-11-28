@@ -274,10 +274,8 @@ export default function MockInterviewsPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <div className="hidden shrink-0 md:block">
-        <Sidebar />
-      </div>
+    <div className="flex min-h-screen flex-col bg-background md:flex-row">
+      <Sidebar />
       <main className="min-w-0 flex-1 bg-[#fbfbfe]">
         {/* Header */}
         <header className="border-b border-border bg-white px-5 py-6 sm:px-8">
@@ -325,7 +323,7 @@ export default function MockInterviewsPage() {
                       AI-Powered
                     </span>
 
-                    <h2 className="mt-6 text-4xl font-black tracking-[-0.06em] text-ink-primary sm:text-5xl xl:text-[5rem]">
+                    <h2 className="mt-6 text-[clamp(2.5rem,6vw,5rem)] font-black tracking-[-0.06em] text-ink-primary">
                       <span className="block text-[#2f5ae7]">Role-Based</span>
                       <span className="block text-[#2d4ee0]">Mock Interview</span>
                     </h2>
@@ -336,7 +334,7 @@ export default function MockInterviewsPage() {
                   </div>
 
                   <div className="flex items-center justify-center lg:justify-end">
-                    <div className="relative flex h-[180px] w-[360px] items-center justify-center">
+                    <div className="relative flex aspect-[2/1] w-full max-w-[360px] items-center justify-center">
                       <div className="absolute left-8 top-6 h-24 w-24 rounded-[28px] bg-gradient-to-br from-[#111827] via-[#1f2937] to-[#3b82f6] shadow-[0_25px_35px_rgba(37,99,235,0.2)]" />
                       <div className="absolute left-12 top-12 h-18 w-18 rounded-[20px] bg-white/95 p-2 shadow-lg">
                         <div className="flex h-full items-center justify-center rounded-[14px] bg-[#f4f7ff] text-3xl font-black text-[#1d4ed8]">
@@ -356,7 +354,7 @@ export default function MockInterviewsPage() {
                         </div>
                       </div>
 
-                      <div className="relative h-[120px] w-[310px] rounded-[28px] border border-[#dfe8ff] bg-white/80 p-4 shadow-[0_30px_35px_rgba(148,163,184,0.25)] backdrop-blur-sm">
+                      <div className="relative aspect-[2.58/1] w-[86%] max-w-[310px] rounded-[28px] border border-[#dfe8ff] bg-white/80 p-4 shadow-[0_30px_35px_rgba(148,163,184,0.25)] backdrop-blur-sm">
                         <div className="absolute left-4 right-4 top-4 h-2 rounded-full bg-[#e5e7eb]" />
                         <div className="absolute inset-x-3 bottom-3 top-9 rounded-[22px] bg-[#f5f8ff]" />
                         <div className="absolute left-[38%] top-7 h-3 w-3 rounded-full bg-primary/80" />

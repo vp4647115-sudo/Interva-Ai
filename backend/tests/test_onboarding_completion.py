@@ -39,6 +39,15 @@ def test_education_routes_require_token(client: TestClient) -> None:
     assert client.post("/api/onboarding/education", json={"school": "MIT"}).status_code in (401, 403)
 
 
+def test_certificate_routes_require_token(client: TestClient) -> None:
+    assert client.get("/api/onboarding/certificates").status_code in (401, 403)
+    assert (
+        client.post("/api/onboarding/certificates", json={"name": "AWS Certified"}).status_code
+        in (401, 403)
+    )
+    assert client.delete("/api/onboarding/certificates/not-a-uuid").status_code in (401, 403)
+
+
 def test_email_template_generation() -> None:
     from app.core.email_service import generate_welcome_email
     msg = generate_welcome_email(
@@ -49,4 +58,3 @@ def test_email_template_generation() -> None:
     assert "Vaibhav Patil" in msg.html
     assert "vaibhavpatilv09@gmail.com" in msg.html
     assert msg.subject == "You're all set! Welcome to Interview AI 🚀"
-

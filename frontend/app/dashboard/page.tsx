@@ -52,9 +52,9 @@ function DashboardContent() {
 
   if (!stats && (!authReady || authUser)) {
     return (
-      <div className="flex min-h-screen bg-background">
+      <div className="flex min-h-screen flex-col bg-background md:flex-row">
         <Sidebar />
-        <main className="flex-1 p-8">
+        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
           <Skeleton className="h-10 w-72" />
           <Skeleton className="mt-6 h-40 w-full" />
         </main>
@@ -63,18 +63,16 @@ function DashboardContent() {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <div className="hidden shrink-0 md:block">
-        <Sidebar />
-      </div>
+    <div className="flex min-h-screen flex-col bg-background md:flex-row">
+      <Sidebar />
       <main className="min-w-0 flex-1 overflow-hidden bg-white">
-        <header className="border-b border-border px-8 py-7">
-          <h1 className="text-3xl font-extrabold tracking-tight text-ink-primary">Auto Apply</h1>
+        <header className="border-b border-border px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
+          <h1 className="text-3xl font-extrabold tracking-tight text-ink-primary sm:text-4xl">Auto Apply</h1>
           <p className="mt-2 text-sm text-ink-secondary">
             Automatically apply to jobs matching your profile.
           </p>
         </header>
-        <section className="min-h-[calc(100vh-106px)] bg-white px-8 py-10">
+        <section className="min-h-[calc(100vh-106px)] bg-white px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
           {/* Profile summary — saved during onboarding */}
           <div className="mx-auto max-w-4xl">
             <div className="flex flex-wrap items-center gap-5 rounded-card border border-border bg-surface p-6 shadow-card">

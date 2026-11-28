@@ -2,6 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+}
+
+body {
+  min-width: 320px;
+  max-width: 100%;
+  overflow-x: clip;
+  overflow-wrap: anywhere;
+}
+
+main {
+  min-width: 0;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+img,
+video,
+canvas {
+  max-width: 100%;
+}
+
+pre {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+input,
+select,
+textarea,
+button {
+  max-width: 100%;
+}
+
+table {
+  width: 100%;
+}
+
+th,
+td {
+  overflow-wrap: anywhere;
+}
+
+:focus-visible {
+  outline: 3px solid #6c4cff;
+  outline-offset: 3px;
+}
+
 :root {
   /* Premium two-tone: crisp white melting into a rich purple */
   --hero-gradient:
@@ -21,8 +75,50 @@ body {
   background-image: var(--hero-gradient);
 }
 
+@keyframes mobile-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .resume-paper {
   min-height: 1100px;
+}
+
+@media (pointer: coarse) {
+  button,
+  [role="button"],
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    min-height: 2.75rem;
+  }
+
+  a[aria-label],
+  a[role="button"] {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 @media print {

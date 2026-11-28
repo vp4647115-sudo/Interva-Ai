@@ -8,14 +8,25 @@ POST /api/onboarding/complete after onboarding finishes. /sync and /me only
 report the database-owned onboarding state so the frontend can route."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
-from sqlalchemy import func, select, update
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.dependencies import CurrentUser
 from ..core.email_service import dispatch_welcome_email
+from ..core.storage import StorageError, delete_user_file
 from ..db.session import get_db
-from ..models.onboarding import Education, Experience, Skill
+from ..models.communication import CommunicationSession
+from ..models.interview import InterviewReport, InterviewTurn
+from ..models.onboarding import (
+    CareerPreference,
+    Certificate,
+    Education,
+    Experience,
+    Language,
+    OnboardingState,
+    Skill,
+)
 from ..models.phase3 import InterviewSession, Resume
 from ..models.profile import CandidateProfile
 from ..schemas.auth import MessageResponse, ProfileIn, ProfileOut, UserOut
@@ -58,8 +69,22 @@ async def sync_session(user: CurrentUser, db: AsyncSession = Depends(get_db)) ->
         select(CandidateProfile).where(CandidateProfile.supabase_user_id == user["id"])
     )
 
+    # Keep CandidateProfile.onboarding_completed and OnboardingState.finished in sync
+    state = await db.scalar(
+        select(OnboardingState).where(OnboardingState.user_id == user["id"])
+    )
+    is_completed = bool(
+        (profile and profile.onboarding_completed) or (state and state.finished)
+    )
+    if profile and profile.onboarding_completed != is_completed:
+        profile.onboarding_completed = is_completed
+        await db.commit()
+    if state and state.finished != is_completed:
+        state.finished = is_completed
+        await db.commit()
+
     # Automated welcome email dispatch on login after onboarding is completed:
-    if profile and profile.onboarding_completed and not profile.welcome_email_sent and not profile.welcome_email_claimed and user.get("email"):
+    if profile and is_completed and not profile.welcome_email_sent and not profile.welcome_email_claimed and user.get("email"):
         claim = await db.execute(
             update(CandidateProfile)
             .where(
@@ -79,13 +104,12 @@ async def sync_session(user: CurrentUser, db: AsyncSession = Depends(get_db)) ->
             )
             await db.refresh(profile)
 
-
     return UserOut(
         id=user["id"],
         email=user["email"],
         full_name=user["claims"].get("name"),
         email_verified=bool(user.get("email_verified")),
-        onboarding_completed=bool(profile.onboarding_completed) if profile else False,
+        onboarding_completed=is_completed,
         welcome_email_sent=bool(profile.welcome_email_sent) if profile else False,
     )
 
@@ -192,6 +216,59 @@ async def update_profile(
 async def logout() -> MessageResponse:
     # Firebase sessions are revoked client-side; nothing to do server-side.
     return MessageResponse(message="Logged out.")
+
+
+@router.delete("/account", response_model=MessageResponse)
+async def delete_account(user: CurrentUser, db: AsyncSession = Depends(get_db)) -> MessageResponse:
+    """Delete the authenticated user's application data and stored files."""
+    uid = user["id"]
+    storage_keys = (
+        await db.scalars(
+            select(Resume.storage_key).where(
+                Resume.user_id == uid, Resume.storage_key.is_not(None)
+            )
+        )
+    ).all()
+    certificate_keys = (
+        await db.scalars(
+            select(Certificate.storage_key).where(
+                Certificate.user_id == uid, Certificate.storage_key.is_not(None)
+            )
+        )
+    ).all()
+
+    all_storage_keys = [key for key in [*storage_keys, *certificate_keys] if key]
+    if any(not key.startswith(f"users/{uid}/") for key in all_storage_keys):
+        raise HTTPException(
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+            "Account files could not be safely removed. Please contact support.",
+        )
+
+    for storage_key in all_storage_keys:
+        try:
+            delete_user_file(storage_key)
+        except StorageError as exc:
+            raise HTTPException(
+                status.HTTP_502_BAD_GATEWAY,
+                "Account files could not be removed. Please try again.",
+            ) from exc
+
+    user_sessions = select(InterviewSession.id).where(InterviewSession.user_id == uid)
+    await db.execute(delete(InterviewTurn).where(InterviewTurn.session_id.in_(user_sessions)))
+    await db.execute(delete(InterviewReport).where(InterviewReport.user_id == uid))
+    await db.execute(delete(CommunicationSession).where(CommunicationSession.user_id == uid))
+    await db.execute(delete(Resume).where(Resume.user_id == uid))
+    await db.execute(delete(InterviewSession).where(InterviewSession.user_id == uid))
+    await db.execute(delete(Education).where(Education.user_id == uid))
+    await db.execute(delete(Experience).where(Experience.user_id == uid))
+    await db.execute(delete(Skill).where(Skill.user_id == uid))
+    await db.execute(delete(Language).where(Language.user_id == uid))
+    await db.execute(delete(Certificate).where(Certificate.user_id == uid))
+    await db.execute(delete(CareerPreference).where(CareerPreference.user_id == uid))
+    await db.execute(delete(OnboardingState).where(OnboardingState.user_id == uid))
+    await db.execute(delete(CandidateProfile).where(CandidateProfile.supabase_user_id == uid))
+    await db.commit()
+    return MessageResponse(message="Account data deleted.")
 
 
 @router.get("/me", response_model=UserOut)

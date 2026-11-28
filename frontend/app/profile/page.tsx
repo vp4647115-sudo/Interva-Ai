@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   apiClient,
   EducationEntry,
@@ -16,6 +17,7 @@ import {
 import { ErrorState, Skeleton } from "@/components/ui/States";
 import RequireOnboarding from "@/components/auth/RequireOnboarding";
 import Sidebar from "@/components/dashboard/Sidebar";
+import { deleteCurrentUser, reauthenticateCurrentUser } from "@/lib/firebase/auth";
 
 type Tab =
   | "overview"
@@ -26,7 +28,8 @@ type Tab =
   | "interviews"
   | "mock-interviews"
   | "upcoming"
-  | "resources";
+  | "resources"
+  | "security";
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "overview", label: "Overview", icon: "👤" },
@@ -38,6 +41,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "mock-interviews", label: "Mock Interviews", icon: "🎭" },
   { id: "upcoming", label: "Upcoming", icon: "📅" },
   { id: "resources", label: "Resources", icon: "📂" },
+  { id: "security", label: "Security", icon: "🔒" },
 ];
 
 export default function ProfilePage() {
@@ -49,6 +53,7 @@ export default function ProfilePage() {
 }
 
 function ProfileContent() {
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>("overview");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -72,6 +77,12 @@ function ProfileContent() {
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileDraft, setProfileDraft] = useState<ProfileIn>({});
   const [savingProfile, setSavingProfile] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [accountDataDeleted, setAccountDataDeleted] = useState(false);
+  const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -137,6 +148,30 @@ function ProfileContent() {
     }
   }
 
+  async function deleteAccount() {
+    if (deleteConfirmation !== "DELETE") return;
+    let dataDeleted = accountDataDeleted;
+    try {
+      setDeletingAccount(true);
+      setDeleteAccountError(null);
+      await reauthenticateCurrentUser(deletePassword);
+      await apiClient.deleteAccount();
+      dataDeleted = true;
+      setAccountDataDeleted(true);
+      await deleteCurrentUser();
+      router.replace("/");
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Account deletion failed.";
+      setDeleteAccountError(
+        dataDeleted
+          ? `Your profile data was deleted, but your sign-in account could not be removed. Try again: ${message}`
+          : message
+      );
+    } finally {
+      setDeletingAccount(false);
+    }
+  }
+
   // Derived session buckets
   const completedSessions = sessions.filter((s) => s.status === "completed");
   const upcomingSessions = sessions.filter(
@@ -155,8 +190,8 @@ function ProfileContent() {
     .toUpperCase();
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <div className="hidden shrink-0 md:block"><Sidebar /></div>
+    <div className="flex min-h-screen flex-col bg-background md:flex-row">
+      <Sidebar />
       <main className="min-w-0 flex-1 bg-background">
       {/* ── Hero / Profile Header ─────────────────────────────── */}
       <div
@@ -290,12 +325,11 @@ function ProfileContent() {
       </div>
 
       {/* ── Tabs ─────────────────────────────────────── */}
-      <div className="sticky top-0 z-10 border-b border-border bg-surface shadow-sm">
-        <div className="mx-auto max-w-6xl px-6">
+      <div className="sticky top-14 z-10 border-b border-border bg-surface shadow-sm md:top-0">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <nav
-            className="flex gap-1 overflow-x-auto py-2"
+            className="flex flex-wrap gap-1 py-2"
             aria-label="Profile sections"
-            style={{ scrollbarWidth: "none" }}
           >
             {TABS.map((t) => (
               <button
@@ -303,7 +337,7 @@ function ProfileContent() {
                 id={`tab-${t.id}`}
                 onClick={() => setTab(t.id)}
                 aria-current={tab === t.id ? "page" : undefined}
-                className={`flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
+                className={`flex min-h-11 items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold transition-all sm:px-4 ${
                   tab === t.id
                     ? "bg-primary text-white shadow-sm"
                     : "text-ink-secondary hover:bg-surface-alt hover:text-ink-primary"
@@ -973,6 +1007,95 @@ function ProfileContent() {
           </>
         )}
       </div>
+      <div className="mx-auto w-full max-w-6xl px-6 pb-10">
+        <section className="rounded-2xl border border-red-200 bg-red-50/60 p-6">
+          <h2 className="text-lg font-bold text-red-800">Delete account</h2>
+          <p className="mt-1 max-w-2xl text-sm text-red-700">
+            Permanently delete your profile, interview history, resumes, and other account data.
+            This action cannot be undone.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setDeleteConfirmation("");
+              setDeletePassword("");
+              setAccountDataDeleted(false);
+              setDeleteAccountError(null);
+              setShowDeleteAccount(true);
+            }}
+            className="mt-4 rounded-xl border border-red-300 px-4 py-2 text-sm font-bold text-red-700 hover:bg-red-100"
+          >
+            Delete account
+          </button>
+        </section>
+      </div>
+      {showDeleteAccount && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6">
+          <section
+            aria-labelledby="delete-account-title"
+            aria-modal="true"
+            className="w-full max-w-lg rounded-2xl bg-surface p-6 shadow-2xl"
+            role="dialog"
+          >
+            <h2 id="delete-account-title" className="text-xl font-bold text-ink-primary">
+              Permanently delete your account?
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
+              This permanently deletes your account and its profile, resumes, certificates, and
+              interview data. You will be signed out and cannot recover this information.
+            </p>
+            <label className="mt-5 block text-sm font-semibold text-ink-primary" htmlFor="delete-account-password">
+              Password <span className="font-normal text-ink-muted">(email sign-in only)</span>
+              <input
+                autoComplete="current-password"
+                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 font-normal focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
+                id="delete-account-password"
+                onChange={(event) => setDeletePassword(event.target.value)}
+                type="password"
+                value={deletePassword}
+              />
+            </label>
+            <p className="mt-3 text-sm text-ink-secondary">
+              Type <strong>DELETE</strong> to confirm.
+            </p>
+            <input
+              autoComplete="off"
+              className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
+              onChange={(event) => setDeleteConfirmation(event.target.value)}
+              value={deleteConfirmation}
+              aria-label="Type DELETE to confirm"
+            />
+            {deleteAccountError && (
+              <p className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">
+                {deleteAccountError}
+              </p>
+            )}
+            {accountDataDeleted && (
+              <p className="mt-3 text-sm text-ink-secondary">
+                Your account data has been deleted. Retry to finish removing your sign-in account.
+              </p>
+            )}
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                className="rounded-xl border border-border px-4 py-2 text-sm font-semibold hover:bg-background disabled:opacity-50"
+                disabled={deletingAccount}
+                onClick={() => setShowDeleteAccount(false)}
+                type="button"
+              >
+                Cancel
+              </button>
+              <button
+                className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={deletingAccount || deleteConfirmation !== "DELETE"}
+                onClick={() => void deleteAccount()}
+                type="button"
+              >
+                {deletingAccount ? "Deleting…" : "Permanently delete"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
       </main>
     </div>
   );

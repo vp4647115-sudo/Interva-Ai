@@ -43,6 +43,8 @@ export function Hero() {
             alt="Candidate practicing a mock interview on a video call"
             width={800}
             height={600}
+            priority
+            sizes="(min-width: 1280px) 448px, (min-width: 768px) 384px, 100vw"
             className="relative w-full max-w-md rounded-card object-cover shadow-modal aspect-[4/3]"
           />
           <div className="absolute -bottom-5 -left-5 rounded-card bg-surface px-5 py-3 shadow-card">

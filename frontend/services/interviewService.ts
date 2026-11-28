@@ -1,11 +1,11 @@
 /** Typed client for multi-turn Interview Engine backend endpoints. */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+import { getApiBase } from "@/lib/api-base";
 
 async function engineRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   const { getIdToken } = await import("@/lib/firebase/auth");
   const token = await getIdToken();
-  const resp = await fetch(`${API_BASE}/api/interview-engine${path}`, {
+  const resp = await fetch(`${getApiBase()}/api/interview-engine${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",

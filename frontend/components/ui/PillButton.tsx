@@ -40,12 +40,16 @@ export function PillLink({
   variant = "primary",
   size = "md",
   className,
+  onClick,
+  tabIndex,
   children,
 }: {
   href: string;
   variant?: Variant;
   size?: keyof typeof sizes;
   className?: string;
+  onClick?: () => void;
+  tabIndex?: number;
   children: React.ReactNode;
 }) {
   return (
@@ -57,6 +61,8 @@ export function PillLink({
         sizes[size],
         className
       )}
+      onClick={onClick}
+      tabIndex={tabIndex}
     >
       {children}
     </Link>

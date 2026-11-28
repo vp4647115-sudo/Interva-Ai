@@ -29,7 +29,7 @@ export default function JobCard({ job, onOpen }: { job: Job; onOpen: (job: Job) 
     <article className="group rounded-card border border-border bg-white p-5 shadow-card transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-modal">
       <div className="flex items-start gap-4">
         {job.companyLogo ? (
-          <Image src={job.companyLogo} alt="" width={48} height={48} className="h-12 w-12 shrink-0 rounded-xl border border-border object-contain p-1" loading="lazy" />
+          <Image src={job.companyLogo} alt="" width={48} height={48} sizes="48px" className="h-12 w-12 shrink-0 rounded-xl border border-border object-contain p-1" loading="lazy" />
         ) : (
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-sm font-extrabold text-primary">{initials}</span>
         )}

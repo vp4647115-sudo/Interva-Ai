@@ -127,6 +127,31 @@ class SkillOut(SkillIn):
     id: str
 
 
+class CertificateIn(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    cert_id: str | None = Field(default=None, max_length=100)
+    link: str | None = Field(default=None, max_length=500)
+
+    @field_validator("name")
+    @classmethod
+    def _clean_name(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("name must not be blank")
+        return cleaned
+
+    @field_validator("cert_id", "link")
+    @classmethod
+    def _clean_optional_text(cls, value: str | None) -> str | None:
+        cleaned = value.strip() if value is not None else None
+        return cleaned or None
+
+
+class CertificateOut(CertificateIn):
+    id: str
+    storage_key: str | None = None
+
+
 class PreferencesIn(BaseModel):
     target_roles: list[str] = []
     seniority: str | None = Field(default=None, max_length=50)

@@ -2,10 +2,14 @@
 
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import {
+  EmailAuthProvider,
   GoogleAuthProvider,
   browserLocalPersistence,
   createUserWithEmailAndPassword,
+  deleteUser,
   getAuth,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
   sendEmailVerification,
   sendPasswordResetEmail,
   setPersistence,
@@ -93,6 +97,32 @@ export async function resetPassword(email: string) {
 
 export async function logout() {
   await signOut(getFirebaseAuth());
+}
+
+export async function reauthenticateCurrentUser(password?: string) {
+  const user = getFirebaseAuth().currentUser;
+  if (!user) throw new Error("You are signed out. Please sign in again.");
+
+  const providerIds = user.providerData.map((provider) => provider.providerId);
+  if (providerIds.includes("password")) {
+    if (!password) throw new Error("Enter your password to confirm account deletion.");
+    if (!user.email) throw new Error("Your account has no email address to reauthenticate.");
+    await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
+    return;
+  }
+
+  if (providerIds.includes("google.com")) {
+    await reauthenticateWithPopup(user, new GoogleAuthProvider());
+    return;
+  }
+
+  throw new Error("Reauthentication is not supported for this sign-in method. Contact support.");
+}
+
+export async function deleteCurrentUser() {
+  const user = getFirebaseAuth().currentUser;
+  if (!user) throw new Error("You are signed out. Please sign in again.");
+  await deleteUser(user);
 }
 
 export async function getIdToken(): Promise<string | null> {

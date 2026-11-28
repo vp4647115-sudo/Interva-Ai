@@ -39,8 +39,8 @@ export default function PreferencesPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <div className="hidden shrink-0 md:block"><Sidebar /></div>
+    <div className="flex min-h-screen flex-col bg-background md:flex-row">
+      <Sidebar />
       <main className="min-w-0 flex-1 bg-white">
         <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border px-6 py-6 sm:px-10">
           <h1 className="text-3xl font-extrabold tracking-tight text-ink-primary">Preferences</h1>

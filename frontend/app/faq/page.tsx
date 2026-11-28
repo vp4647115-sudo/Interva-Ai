@@ -22,7 +22,7 @@ const faqs = [
   { question: "Can I practice in multiple languages?", answer: "Language availability depends on the current Interview AI implementation and supported AI models." },
   { question: "Is Interview AI free?", answer: "Interview AI may provide free and paid features depending on current plans. Check the pricing page for the latest information." },
   { question: "Can I cancel my subscription?", answer: "If you have a subscription, you can cancel future renewals through the available subscription-management options, subject to applicable terms." },
-  { question: "How do I delete my account?", answer: <>Use the available account-deletion functionality or contact <a className="text-primary underline" href="mailto:vp4647115@gmail.com">vp4647115@gmail.com</a>.</> },
+  { question: "How do I delete my account?", answer: "Open your Profile page, choose Delete account, and follow the confirmation steps. This permanently removes your account and its data." },
   { question: "How do I contact Interview AI?", answer: <>For general support and inquiries, email <a className="text-primary underline" href="mailto:vp4647115@gmail.com">vp4647115@gmail.com</a>.</> },
   { question: "Can I use AI during a real job interview?", answer: "Interview AI is designed primarily for preparation and practice. Do not use AI to secretly answer questions or deceive an interviewer where prohibited by the employer, institution, or applicable rules." },
   { question: "Can AI-generated answers be wrong?", answer: "Yes. AI systems can produce inaccurate, incomplete, or outdated information. Review important information independently." },

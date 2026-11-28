@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     environment: str = "development"
 
     # CORS: restricted to known frontend origins (rule.md §6)
-    frontend_origin: str = "http://localhost:3000"
+    frontend_origin: str = "http://localhost:3000,https://intervai.vpnpro.in"
 
     # Supabase (legacy — retained for storage/DB integration; auth now via Firebase)
     supabase_url: str = ""
@@ -67,7 +67,7 @@ class Settings(BaseSettings):
     email_from_name: str = "Interview AI"
 
     # Public application URL used in email links (never hardcode localhost).
-    app_url: str = "http://localhost:3000"
+    app_url: str = "https://intervai.vpnpro.in"
 
 
 @lru_cache

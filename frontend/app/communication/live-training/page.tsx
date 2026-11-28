@@ -441,8 +441,8 @@ function LiveTrainingContent() {
   // ── Render ──────────────────────────────────────────────────────────
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <div className="hidden shrink-0 md:block"><Sidebar /></div>
+    <div className="flex min-h-screen flex-col bg-background md:flex-row">
+      <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
       {/* Top bar */}
       <header className="flex items-center justify-between border-b border-border bg-white px-5 py-4 sm:px-8">

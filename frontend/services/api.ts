@@ -1,7 +1,6 @@
 // Typed API client. Auth is handled by Firebase on the client; requests to the
 // FastAPI backend carry a Firebase ID token in the Authorization header.
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-
+import { getApiBase } from "@/lib/api-base";
 import { getIdToken } from "@/lib/firebase/auth";
 
 export interface UserOut {
@@ -9,6 +8,8 @@ export interface UserOut {
   email: string;
   full_name: string | null;
   email_verified: boolean;
+  onboarding_completed: boolean;
+  welcome_email_sent: boolean;
 }
 
 export interface ProfileOut {
@@ -114,7 +115,7 @@ export interface InterviewSession {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = await getIdToken();
-  const resp = await fetch(`${API_BASE}/api${path}`, {
+  const resp = await fetch(`${getApiBase()}/api${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
@@ -132,6 +133,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const apiClient = {
   me: () => request<UserOut>("/auth/me"),
   sync: () => request<UserOut>("/auth/sync", { method: "POST" }),
+  deleteAccount: () => request<{ message: string }>("/auth/account", { method: "DELETE" }),
 
   // Profile
   getProfile: () => request<ProfileOut>("/auth/profile"),
@@ -153,18 +155,15 @@ export const apiClient = {
 
   /**
    * Post-login destination: first-time users go to the onboarding wizard;
-   * returning users (wizard finished) go straight to the dashboard.
-   * Falls back to the dashboard when the check fails so a backend hiccup
-   * never traps a signed-in user on the login page.
+   * returning users go straight to the dashboard.
+   *
+   * Uses `onboarding_completed` from /auth/sync (the backend source of truth
+   * stored on CandidateProfile) instead of wizard.finished (OnboardingState),
+   * which is a separate field that can fall out of sync.
    */
   postLoginDestination: async (): Promise<"/onboarding" | "/dashboard"> => {
-    try {
-      await apiClient.sync();
-      const wizard = await apiClient.getWizardState();
-      return wizard.finished ? "/dashboard" : "/onboarding";
-    } catch {
-      return "/dashboard";
-    }
+    const user = await apiClient.sync();
+    return user.onboarding_completed ? "/dashboard" : "/onboarding";
   },
 
   // Education

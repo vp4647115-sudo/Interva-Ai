@@ -5,30 +5,23 @@ export const dynamic = "force-dynamic";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getRedirectResult, onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 import { firebaseAuth } from "@/lib/firebase/auth";
 import { apiClient } from "@/services/api";
 
-// Handles both popup sign-in (auth state fires) and redirect sign-in
-// (getRedirectResult resolves), then routes: first-time users → onboarding,
-// returning users → dashboard.
+// Fallback route: if a signed-in user lands here directly, route them to the
+// right place. With signInWithPopup the routing happens in the login page
+// immediately after the popup resolves — this page is just a safety net.
 export default function OAuthCallbackPage() {
   const router = useRouter();
 
   useEffect(() => {
     let routed = false;
-    const route = async () => {
-      if (routed) return;
-      routed = true;
-      router.push(await apiClient.postLoginDestination());
-    };
-    getRedirectResult(firebaseAuth)
-      .then((cred) => {
-        if (cred?.user) void route();
-      })
-      .catch(() => {});
-    const unsub = onAuthStateChanged(firebaseAuth, (user) => {
-      if (user) void route();
+    const unsub = onAuthStateChanged(firebaseAuth, async (user) => {
+      if (user && !routed) {
+        routed = true;
+        router.push(await apiClient.postLoginDestination());
+      }
     });
     return unsub;
   }, [router]);

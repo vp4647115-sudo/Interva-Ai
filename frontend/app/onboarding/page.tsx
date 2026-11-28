@@ -119,8 +119,18 @@ export default function OnboardingPage() {
   // Onboarding is one-time only: a user who already finished the wizard
   // (e.g. bookmarked /onboarding) goes straight to their dashboard.
   useEffect(() => {
-    if (state?.finished) router.replace("/dashboard");
-  }, [state, router]);
+    let active = true;
+    if (state?.finished && authUser) {
+      void apiClient.sync().then((me) => {
+        if (active && me.onboarding_completed) {
+          router.replace("/dashboard");
+        }
+      }).catch(() => {});
+    }
+    return () => {
+      active = false;
+    };
+  }, [state?.finished, authUser, router]);
 
   if (error) return <ErrorState message={error} onRetry={() => void load()} />;
   if (!authReady || !authUser || !state) {

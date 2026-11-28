@@ -25,8 +25,8 @@ function ProgressPage() {
   const p = data?.progress;
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <div className="hidden shrink-0 md:block"><Sidebar /></div>
+    <div className="flex min-h-screen flex-col bg-background md:flex-row">
+      <Sidebar />
       <main className="min-w-0 flex-1 bg-[#fbfbfe]">
         <header className="border-b border-border bg-white px-5 py-6 sm:px-8">
           <div className="mx-auto max-w-5xl">

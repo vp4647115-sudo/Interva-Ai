@@ -28,7 +28,7 @@ const helpSections = [
   ] },
   { title: "Account", items: [
     { question: "How do I change my profile?", answer: "Open your account or profile settings and update the available information." },
-    { question: "How do I delete my account?", answer: <>Use the account deletion option if available, or contact <a className="text-primary underline" href="mailto:vp4647115@gmail.com">vp4647115@gmail.com</a>.</> },
+    { question: "How do I delete my account?", answer: "Open your Profile page, choose Delete account, and follow the confirmation steps. This permanently removes your account and its data." },
   ] },
   { title: "Billing", items: [
     { question: "How do I manage my subscription?", answer: "Open your account's billing or subscription section." },

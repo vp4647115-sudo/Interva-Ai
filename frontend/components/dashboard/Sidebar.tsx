@@ -150,10 +150,20 @@ const groups: NavGroup[] = [
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     setCollapsed(window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true");
   }, []);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [mobileOpen]);
 
   const toggleCollapsed = () => {
     setCollapsed((current) => {
@@ -163,9 +173,62 @@ export default function Sidebar() {
     });
   };
 
+  const routes: Record<string, string> = {
+    Dashboard: "/dashboard",
+    "Job Search": "/jobs",
+    "Saved Jobs": "/saved-jobs",
+    "Answer Library": "/answer-library",
+    Preferences: "/preferences",
+    "Application Kits": "/application-kits",
+    Resumes: "/resume",
+    "Cover Letters": "/cover-letters",
+    "Interview Buddy": "/interview-buddy",
+    "Mock Interviews": "/mock-interviews",
+    "Build Communication": "/communication",
+    "Live Training": "/communication/live-training",
+    "My Profile": "/profile",
+  };
+
+  const navGroups = (isCollapsed: boolean, onNavigate?: () => void) => (
+    <nav className="flex-1 overflow-y-auto px-3" aria-label="App navigation">
+      {groups.map((group) => (
+        <div key={group.title} className="mb-5">
+          {!isCollapsed && (
+            <p className="px-3 pb-2 text-[11px] font-bold uppercase tracking-widest text-ink-muted">
+              {group.title}
+            </p>
+          )}
+          <ul className="space-y-1">
+            {group.items.map((item) => {
+              const href = routes[item.label];
+              return (
+                <li key={item.label}>
+                  <Link
+                    href={href ?? "#"}
+                    title={item.label}
+                    onClick={onNavigate}
+                    className={`flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
+                      item.active
+                        ? "bg-primary-soft text-primary"
+                        : "text-ink-secondary hover:bg-surface-alt hover:text-ink-primary"
+                    }`}
+                  >
+                    {item.icon}
+                    {!isCollapsed && item.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </nav>
+  );
+
   return (
+    <>
     <aside
-      className={`flex h-screen flex-col border-r border-border bg-surface transition-all duration-300 ${
+      className={`hidden h-screen shrink-0 flex-col border-r border-border bg-surface transition-all duration-300 md:flex ${
         collapsed ? "w-[76px]" : "w-[280px]"
       }`}
     >
@@ -196,53 +259,7 @@ export default function Sidebar() {
       </div>
 
       {/* Nav groups */}
-      <nav className="flex-1 overflow-y-auto px-3">
-        {groups.map((group) => (
-          <div key={group.title} className="mb-5">
-            {!collapsed && (
-              <p className="px-3 pb-2 text-[11px] font-bold uppercase tracking-widest text-ink-muted">
-                {group.title}
-              </p>
-            )}
-            <ul className="space-y-1">
-              {group.items.map((item) => {
-                const routes: Record<string, string> = {
-                  Dashboard: "/dashboard",
-                  "Job Search": "/jobs",
-                  "Saved Jobs": "/saved-jobs",
-                  "Answer Library": "/answer-library",
-                  Preferences: "/preferences",
-                  "Application Kits": "/application-kits",
-                  Resumes: "/resume",
-                  "Cover Letters": "/cover-letters",
-                  "Interview Buddy": "/interview-buddy",
-                  "Mock Interviews": "/mock-interviews",
-                  "Build Communication": "/communication",
-                  "Live Training": "/communication/live-training",
-                  "My Profile": "/profile",
-                };
-                const href = routes[item.label];
-                return (
-                  <li key={item.label}>
-                    <Link
-                      href={href ?? "#"}
-                      title={item.label}
-                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
-                        item.active
-                          ? "bg-primary-soft text-primary"
-                          : "text-ink-secondary hover:bg-surface-alt hover:text-ink-primary"
-                      }`}
-                    >
-                      {item.icon}
-                      {!collapsed && item.label}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
-      </nav>
+      {navGroups(collapsed)}
 
       {/* User footer */}
       <div className="border-t border-border p-3">
@@ -288,5 +305,63 @@ export default function Sidebar() {
         </Link>
       </div>
     </aside>
+    <div className="sticky top-0 z-40 flex min-h-14 items-center justify-between border-b border-border bg-surface px-4 py-2 md:hidden">
+      <Link className="text-xl font-extrabold tracking-tight text-primary" href="/dashboard">
+        Interv<span className="text-pink-accent">Ai</span>
+      </Link>
+      <button
+        aria-controls="mobile-app-navigation"
+        aria-expanded={mobileOpen}
+        aria-label={mobileOpen ? "Close app navigation" : "Open app navigation"}
+        className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-border text-ink-primary hover:bg-surface-alt"
+        onClick={() => setMobileOpen((open) => !open)}
+        type="button"
+      >
+        {mobileOpen ? (
+          <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" d="m6 6 12 12M18 6 6 18" />
+          </svg>
+        ) : (
+          <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        )}
+      </button>
+      {mobileOpen && (
+        <div className="fixed inset-x-0 bottom-0 top-14 z-50 bg-black/40 md:hidden" onClick={() => setMobileOpen(false)}>
+          <div
+            className="flex h-[calc(100dvh-3.5rem)] w-full max-w-sm animate-[mobile-menu-in_180ms_ease-out] flex-col bg-surface shadow-modal"
+            id="mobile-app-navigation"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="App navigation"
+          >
+            <div className="flex items-center justify-between border-b border-border px-5 py-4">
+              <p className="font-bold text-ink-primary">Navigation</p>
+              <button
+                aria-label="Close app navigation"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-ink-secondary hover:bg-surface-alt"
+                onClick={() => setMobileOpen(false)}
+                type="button"
+              >
+                <span aria-hidden="true" className="text-xl">×</span>
+              </button>
+            </div>
+            {navGroups(false, () => setMobileOpen(false))}
+            <div className="border-t border-border p-3">
+              <Link
+                className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-ink-secondary hover:bg-surface-alt"
+                href="/profile"
+                onClick={() => setMobileOpen(false)}
+              >
+                My Profile
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+    </>
   );
 }

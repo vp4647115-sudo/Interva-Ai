@@ -7,6 +7,7 @@ import Sidebar from "@/components/dashboard/Sidebar";
 import RequireOnboarding from "@/components/auth/RequireOnboarding";
 import { communicationApi, scoreLabel, type CommAnalysis, type CommMode, type CommSkill } from "@/services/communication";
 import { useSpeechRecognition } from "@/lib/speech/useSpeechRecognition";
+import { getApiBase } from "@/lib/api-base";
 
 const CONSENT_KEY = "intervai-comm-consent";
 const STARTER_QUESTIONS = [
@@ -19,7 +20,7 @@ async function speakQuestion(text: string) {
   try {
     const { getIdToken } = await import("@/lib/firebase/auth");
     const token = await getIdToken();
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/communication/voice`, {
+    const response = await fetch(`${getApiBase()}/api/communication/voice`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: JSON.stringify({ text }),
@@ -150,8 +151,8 @@ function CoachPage() {
   const activeSkill = skills.find((s) => s.id === skill);
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <div className="hidden shrink-0 md:block"><Sidebar /></div>
+    <div className="flex min-h-screen flex-col bg-background md:flex-row">
+      <Sidebar />
       <main className="min-w-0 flex-1 bg-[#fbfbfe]">
         <header className="border-b border-border bg-white px-5 py-6 sm:px-8">
           <div className="mx-auto max-w-7xl">

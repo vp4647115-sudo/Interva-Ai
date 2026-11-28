@@ -30,7 +30,7 @@ export default function JobDetails({ job, onClose }: { job: Job; onClose: () => 
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-4">
             {job.companyLogo ? (
-              <Image src={job.companyLogo} alt="" width={56} height={56} className="h-14 w-14 rounded-xl border border-border object-contain p-1" />
+              <Image src={job.companyLogo} alt="" width={56} height={56} sizes="56px" className="h-14 w-14 rounded-xl border border-border object-contain p-1" />
             ) : (
               <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary-soft font-extrabold text-primary">{(job.company ?? "?").slice(0, 2).toUpperCase()}</span>
             )}

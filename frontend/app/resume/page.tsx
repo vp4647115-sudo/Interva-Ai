@@ -47,7 +47,7 @@ const FIELD_OPTIONS = [
 ];
 
 const emptyDraft: ResumeDraft = { name: "", role: "", email: "", phone: "", location: "", linkedin: "", summary: "", degree: "", school: "", skills: [], experience: [], projects: [] };
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+import { getApiBase } from "@/lib/api-base";
 
 const ANALYSIS_STAGES = ["Reading document", "Extracting information", "Detecting sections", "Evaluating ATS compatibility", "Generating recommendations"];
 const GENERATION_STAGES = ["Validating your information", "Researching the current job market", "Analyzing your profile", "Selecting the best resume structure", "Writing your resume"];
@@ -179,7 +179,7 @@ export default function ResumeBuilderPage() {
     try {
       const { getIdToken } = await import("@/lib/firebase/auth");
       const token = await getIdToken();
-      const resp = await fetch(`${API_BASE}/api/resume/generate-ai`, {
+      const resp = await fetch(`${getApiBase()}/api/resume/generate-ai`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({
@@ -235,7 +235,7 @@ export default function ResumeBuilderPage() {
     try {
       const { getIdToken } = await import("@/lib/firebase/auth");
       const token = await getIdToken();
-      const resp = await fetch(`${API_BASE}/api/resume/generate-ai`, {
+      const resp = await fetch(`${getApiBase()}/api/resume/generate-ai`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({
@@ -301,8 +301,8 @@ export default function ResumeBuilderPage() {
   const scoreLabel = score >= 80 ? "Excellent Foundation" : score >= 60 ? "Good — Room to Improve" : "Needs Work";
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <div className="hidden shrink-0 md:block"><Sidebar /></div>
+    <div className="flex min-h-screen flex-col bg-background md:flex-row">
+      <Sidebar />
       <main className="min-w-0 flex-1 bg-[#fbfbfe]">
         <header className="border-b border-border bg-white px-5 py-6 sm:px-8">
           <div className="mx-auto flex max-w-7xl items-start justify-between gap-4">

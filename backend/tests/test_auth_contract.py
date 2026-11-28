@@ -31,3 +31,7 @@ def test_me_requires_token(client: TestClient) -> None:
 
 def test_sync_requires_token(client: TestClient) -> None:
     assert client.post("/api/auth/sync").status_code in (401, 403)
+
+
+def test_delete_account_requires_token(client: TestClient) -> None:
+    assert client.delete("/api/auth/account").status_code in (401, 403)

@@ -52,7 +52,8 @@ export async function searchJobs(
 ): Promise<JobSearchResponse> {
   const { getIdToken } = await import("@/lib/firebase/auth");
   const token = await getIdToken();
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const { getApiBase } = await import("@/lib/api-base");
+  const API_BASE = getApiBase();
   const requestFilters = {
     ...filters,
     remote: filters.remote || null,

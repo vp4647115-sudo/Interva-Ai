@@ -43,6 +43,7 @@ export function AuthTrustPanel() {
             width={600}
             height={375}
             priority
+            sizes="(min-width: 1024px) 448px, 100vw"
             className="aspect-[16/10] w-full rounded-card object-cover shadow-modal"
           />
           <TestimonialRow quote="I walked into my real interview feeling ready" author="James L." />

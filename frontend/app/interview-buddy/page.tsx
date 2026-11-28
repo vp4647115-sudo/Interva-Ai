@@ -124,8 +124,8 @@ export default function InterviewBuddyPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <div className="hidden shrink-0 md:block"><Sidebar /></div>
+    <div className="flex min-h-screen flex-col bg-background md:flex-row">
+      <Sidebar />
       <main className="flex min-w-0 flex-1 flex-col bg-[#fbfbfe]">
         <header className="border-b border-border bg-white px-5 py-6 sm:px-8">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

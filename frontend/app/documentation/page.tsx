@@ -321,7 +321,7 @@ const sections: DocSection[] = [
         { question: "Does Interview AI use AI?", answer: "Yes. AI is a core part of the platform's interview and preparation functionality." },
         { question: "Can AI make mistakes?", answer: "Yes. AI-generated results should be reviewed and treated as guidance." },
         { question: "Can I practice multiple times?", answer: "Yes, subject to the applicable plan and usage limits." },
-        { question: "How do I delete my account?", answer: "Use the account deletion functionality where available or contact vp4647115@gmail.com." },
+        { question: "How do I delete my account?", answer: "Open your Profile page, choose Delete account, and follow the confirmation steps. This permanently removes your account and its data." },
       ] },
     ],
   },

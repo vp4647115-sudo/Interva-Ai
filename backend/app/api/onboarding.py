@@ -8,13 +8,14 @@ Endpoints (all under /api/onboarding):
 - GET  /status           — backend-owned onboardingCompleted flag (source of truth)
 - POST /complete         — one-time completion: validate contact data, persist,
                            set onboardingCompleted, send welcome email exactly once
-- CRUD for education / experience / skills, GET+PUT preferences
+- CRUD for education / experience / skills / certificates, GET+PUT preferences
 - GET  /completion       — weighted profile completion percentage
 - GET  /dashboard        — aggregate stats for the personalized dashboard
 """
 from __future__ import annotations
 
 import logging
+from typing import Any
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
@@ -28,6 +29,7 @@ from ..core.storage import StorageError, upload_user_file, validate_file
 from ..db.session import SessionLocal, get_db
 from ..models.onboarding import (
     CareerPreference,
+    Certificate,
     Education,
     Experience,
     OnboardingState,
@@ -35,6 +37,8 @@ from ..models.onboarding import (
 )
 from ..models.profile import CandidateProfile
 from ..schemas.onboarding import (
+    CertificateIn,
+    CertificateOut,
     CompletionOut,
     DashboardOut,
     EducationIn,
@@ -57,6 +61,17 @@ router = APIRouter(prefix="/api/onboarding", tags=["onboarding"])
 
 # Weighted completion: not all fields mandatory (phase.md Phase 2).
 WEIGHTS = {"profile": 20, "education": 15, "experience": 25, "skills": 20, "preferences": 20}
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers (defined early so all callers below can reference them)
+# ---------------------------------------------------------------------------
+
+async def _get_profile(db: AsyncSession, user_id: str) -> CandidateProfile | None:
+    """Return the CandidateProfile row for *user_id*, or None if absent."""
+    return await db.scalar(
+        select(CandidateProfile).where(CandidateProfile.supabase_user_id == user_id)
+    )
 
 
 async def _get_state(db: AsyncSession, user_id: str) -> OnboardingState:
@@ -179,12 +194,6 @@ async def finish(user: CurrentUser, db: AsyncSession = Depends(get_db)) -> Wizar
 
 
 # --- One-time completion & backend-owned status ------------------------------
-
-
-async def _get_profile(db: AsyncSession, user_id: str) -> CandidateProfile | None:
-    return await db.scalar(
-        select(CandidateProfile).where(CandidateProfile.supabase_user_id == user_id)
-    )
 
 
 @router.get("/status", response_model=OnboardingStatusOut)
@@ -343,6 +352,53 @@ async def upload_certificate(
 
 
 # --- Education ---------------------------------------------------------------
+
+
+@router.get("/certificates", response_model=list[CertificateOut])
+async def list_certificates(user: CurrentUser, db: AsyncSession = Depends(get_db)):
+    rows = (
+        await db.scalars(
+            select(Certificate)
+            .where(Certificate.user_id == user["id"])
+            .order_by(Certificate.created_at)
+        )
+    ).all()
+    return [
+        CertificateOut(
+            id=str(row.id),
+            name=row.name,
+            cert_id=row.cert_id,
+            link=row.link,
+            storage_key=row.storage_key,
+        )
+        for row in rows
+    ]
+
+
+@router.post("/certificates", response_model=CertificateOut, status_code=201)
+async def add_certificate(
+    payload: CertificateIn, user: CurrentUser, db: AsyncSession = Depends(get_db)
+):
+    row = Certificate(user_id=user["id"], **payload.model_dump())
+    db.add(row)
+    await db.commit()
+    await db.refresh(row)
+    return CertificateOut(
+        id=str(row.id),
+        name=row.name,
+        cert_id=row.cert_id,
+        link=row.link,
+        storage_key=row.storage_key,
+    )
+
+
+@router.delete("/certificates/{row_id}", status_code=204)
+async def delete_certificate(
+    row_id: str, user: CurrentUser, db: AsyncSession = Depends(get_db)
+) -> None:
+    row = await verify_object_ownership(db, Certificate, row_id, user["id"])
+    await db.delete(row)
+    await db.commit()
 
 
 @router.get("/education", response_model=list[EducationOut])
