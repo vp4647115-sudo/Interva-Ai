@@ -15,6 +15,7 @@ import { AuthTrustPanel } from "@/components/auth/AuthTrustPanel";
 import { PillButton } from "@/components/ui/PillButton";
 import {
   completeGoogleRedirect,
+  getCurrentFirebaseUser,
   loginWithEmail,
   loginWithGoogle,
   prepareFirebaseAuth,
@@ -74,14 +75,14 @@ export default function LoginPage() {
     async function initializeAuth() {
       try {
         await prepareFirebaseAuth();
-        if (active) setAuthReady(true);
-
         const result = await completeGoogleRedirect();
-        if (!result?.user || !active) return;
+        const user = result?.user ?? await getCurrentFirebaseUser();
+        if (active) setAuthReady(true);
+        if (!user || !active) return;
 
         setBusy(true);
-        queueLoginNotification();
-        router.replace(await apiClient.postLoginDestination());
+        if (result?.user) queueLoginNotification();
+        router.replace("/dashboard");
       } catch (err) {
         if (!active) return;
         setServerError(friendlyError(err));

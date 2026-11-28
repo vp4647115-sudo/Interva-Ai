@@ -53,10 +53,12 @@ export function AppBreadcrumbs() {
   const segments = pathname.split("/").filter(Boolean);
   if (segments.length === 0) return null;
 
-  const items = segments.map((segment, index) => ({
-    label: LABELS[segment] ?? segment.replace(/-/g, " "),
-    href: `/${segments.slice(0, index + 1).join("/")}`,
-  }));
+  const items = segments
+    .map((segment, index) => ({
+      label: LABELS[segment] ?? segment.replace(/-/g, " "),
+      href: `/${segments.slice(0, index + 1).join("/")}`,
+    }))
+    .filter((item) => item.href !== "/auth");
 
   return (
     <div className="border-b border-border/60 bg-surface">
