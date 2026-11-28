@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 const SIDEBAR_COLLAPSED_KEY = "intervai-sidebar-collapsed";
 
@@ -235,8 +236,14 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="flex items-center justify-between px-5 py-5">
         {!collapsed && (
-          <a href="#" className="text-2xl font-extrabold tracking-tight text-primary">
-            Interv<span className="text-pink-accent">Ai</span>
+          <a href="/dashboard" aria-label="IntervAi dashboard" className="flex h-[60px] w-[76px] items-center">
+            <Image
+              src="/intervai-logo.png"
+              alt="IntervAi"
+              width={640}
+              height={512}
+              className="h-full w-full object-contain"
+            />
           </a>
         )}
         <button
@@ -306,8 +313,14 @@ export default function Sidebar() {
       </div>
     </aside>
     <div className="sticky top-0 z-40 flex min-h-14 items-center justify-between border-b border-border bg-surface px-4 py-2 md:hidden">
-      <Link className="text-xl font-extrabold tracking-tight text-primary" href="/dashboard">
-        Interv<span className="text-pink-accent">Ai</span>
+      <Link className="flex h-[48px] w-[62px] items-center" href="/dashboard" aria-label="IntervAi dashboard">
+        <Image
+          src="/intervai-logo.png"
+          alt="IntervAi"
+          width={640}
+          height={512}
+          className="h-full w-full object-contain"
+        />
       </Link>
       <button
         aria-controls="mobile-app-navigation"

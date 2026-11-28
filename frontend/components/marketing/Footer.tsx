@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 /* Design tokens from design.md §3–5 (rule.md §3 — no ad hoc hex colors). */
 
@@ -170,8 +171,14 @@ export function Footer() {
         <div className="grid gap-12 lg:grid-cols-[minmax(280px,340px)_1fr] lg:gap-16">
           {/* Brand section */}
           <div>
-            <a href="/" className="inline-flex items-center gap-1 text-xl font-extrabold tracking-tight text-ink-primary">
-              Interv<span className="text-primary">Ai</span>
+            <a href="/" aria-label="IntervAi home" className="inline-flex h-[82px] w-[104px] items-center">
+              <Image
+                src="/intervai-logo.png"
+                alt="IntervAi"
+                width={640}
+                height={512}
+                className="h-full w-full object-contain"
+              />
             </a>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-ink-secondary">
               Practice real interviews with an AI that adapts to you. Get structured feedback, track your progress,

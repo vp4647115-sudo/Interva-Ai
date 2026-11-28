@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { PillLink } from "@/components/ui/PillButton";
 import { SITE_URL } from "@/lib/site";
@@ -64,8 +65,15 @@ export function TopNav() {
         aria-label="Main navigation"
         className="mx-auto flex min-h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6"
       >
-        <a href="/" className="shrink-0 text-lg font-extrabold tracking-tight">
-          Interv<span className="text-primary">Ai</span>
+        <a href="/" aria-label="IntervAi home" className="flex h-[60px] w-[76px] shrink-0 items-center">
+          <Image
+            src="/intervai-logo.png"
+            alt="IntervAi"
+            width={640}
+            height={512}
+            priority
+            className="h-full w-full object-contain"
+          />
         </a>
         <div className="hidden items-center gap-6 text-sm font-medium text-ink-secondary md:flex">
           <a href="/#features" className="hover:text-ink-primary">Features</a>

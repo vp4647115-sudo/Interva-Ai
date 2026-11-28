@@ -49,7 +49,7 @@ export default function LandingPage() {
             "@type": "Organization",
             name: BRAND_NAME,
             url: SITE_URL,
-            logo: `${SITE_URL}/favicon.ico`,
+            logo: `${SITE_URL}/intervai-logo.png`,
             sameAs: [
               "https://x.com/vp4647115",
               "https://www.linkedin.com/in/vaibhav-patil2032",
