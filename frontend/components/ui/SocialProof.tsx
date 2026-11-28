@@ -21,6 +21,8 @@ export function AvatarStack({ names }: { names: string[] }) {
             width={36}
             height={36}
             sizes="36px"
+            loading="lazy"
+            decoding="async"
             className="h-9 w-9 rounded-full border-2 border-white object-cover"
           />
         ) : (

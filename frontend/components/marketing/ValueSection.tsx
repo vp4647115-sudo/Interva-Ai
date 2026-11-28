@@ -41,6 +41,8 @@ export function ValueSection() {
               alt={f.alt}
               width={600}
               height={375}
+              loading="lazy"
+              decoding="async"
               sizes="(min-width: 1024px) 360px, (min-width: 768px) 50vw, 100vw"
               className="aspect-[16/10] w-full object-cover"
             />
