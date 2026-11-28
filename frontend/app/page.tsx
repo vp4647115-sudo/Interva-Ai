@@ -5,15 +5,16 @@ import { FeatureGrid, ResumeExamples, Testimonials } from "@/components/marketin
 import { CTABanner } from "@/components/marketing/CTABanner";
 import { FAQItem } from "@/components/ui/FAQItem";
 import { Footer } from "@/components/marketing/Footer";
-import type { Metadata } from "next";
+import { createPageMetadata } from "@/lib/seo";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { SITE_URL, BRAND_NAME } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata = createPageMetadata({
   title: "IntervAi — Practice interviews with AI",
   description:
     "Practice role-specific AI mock interviews, get structured feedback, and build a personalized plan to interview with confidence.",
-  alternates: { canonical: "/" },
-  openGraph: { url: "https://intervai.vpnpro.in" },
-};
+  path: "/",
+});
 
 const faqs = [
   {
@@ -41,6 +42,35 @@ const faqs = [
 export default function LandingPage() {
   return (
     <>
+      <JsonLd data={{
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            name: BRAND_NAME,
+            url: SITE_URL,
+            logo: `${SITE_URL}/favicon.ico`,
+            sameAs: [
+              "https://x.com/vp4647115",
+              "https://www.linkedin.com/in/vaibhav-patil2032",
+              "https://github.com/vp4647115-sudo",
+            ],
+          },
+          {
+            "@type": "WebSite",
+            name: BRAND_NAME,
+            url: SITE_URL,
+          },
+          {
+            "@type": "SoftwareApplication",
+            name: BRAND_NAME,
+            applicationCategory: "EducationalApplication",
+            operatingSystem: "Web",
+            url: SITE_URL,
+            description: "AI-powered interview preparation and practice.",
+          },
+        ],
+      }} />
       <TopNav />
       <main>
         <Hero />

@@ -1,18 +1,12 @@
 import { Footer } from "@/components/marketing/Footer";
 import { TopNav } from "@/components/marketing/TopNav";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = createPageMetadata({
   title: "About Interview AI | IntervAi",
   description: "Learn more about Interview AI and our mission to make interview preparation accessible and practical.",
-  alternates: { canonical: "/about" },
-  openGraph: { url: "https://intervai.vpnpro.in/about" },
-  twitter: {
-    card: "summary_large_image",
-    title: "About Interview AI | IntervAi",
-    description: "Learn more about Interview AI and our mission to make interview preparation accessible and practical.",
-    images: ["/opengraph-image"],
-  },
-};
+  path: "/about",
+});
 
 export default function AboutPage() {
   return (

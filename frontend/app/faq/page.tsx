@@ -1,18 +1,13 @@
 import { Footer } from "@/components/marketing/Footer";
 import { TopNav } from "@/components/marketing/TopNav";
+import { createPageMetadata } from "@/lib/seo";
+import { JsonLd } from "@/components/seo/JsonLd";
 
-export const metadata = {
+export const metadata = createPageMetadata({
   title: "Frequently Asked Questions | IntervAi",
   description: "Answers to common questions about Interview AI, practice, features, privacy, and subscriptions.",
-  alternates: { canonical: "/faq" },
-  openGraph: { url: "https://intervai.vpnpro.in/faq" },
-  twitter: {
-    card: "summary_large_image",
-    title: "Frequently Asked Questions | IntervAi",
-    description: "Answers to common questions about Interview AI, practice, features, privacy, and subscriptions.",
-    images: ["/opengraph-image"],
-  },
-};
+  path: "/faq",
+});
 
 const faqs = [
   { question: "What is Interview AI?", answer: "Interview AI is an AI-powered interview preparation platform that helps users practice interviews, improve communication, analyze resumes, and prepare for career opportunities." },
@@ -40,6 +35,22 @@ const faqs = [
 export default function FAQPage() {
   return (
     <>
+      <JsonLd data={{
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: faqs.map((faq) => ({
+          "@type": "Question",
+          name: faq.question,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: typeof faq.answer === "string"
+              ? faq.answer
+              : faq.question === "How do I contact Interview AI?"
+                ? "For general support and inquiries, email vp4647115@gmail.com."
+                : "See our Privacy Policy for more information.",
+          },
+        })),
+      }} />
       <TopNav />
       <main className="bg-surface">
         <div className="mx-auto max-w-4xl px-6 py-16 md:py-20">

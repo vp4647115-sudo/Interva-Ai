@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PillLink } from "@/components/ui/PillButton";
+import { SITE_URL } from "@/lib/site";
 
 const BREADCRUMB_LABELS: Record<string, string> = {
   about: "About",
@@ -19,6 +20,28 @@ const BREADCRUMB_LABELS: Record<string, string> = {
   privacy: "Privacy",
   "question-bank": "Question Bank",
   terms: "Terms",
+  "answer-library": "Saved Answers",
+  "application-kits": "Application Kits",
+  auth: "Account",
+  callback: "Sign In",
+  login: "Log In",
+  register: "Create Account",
+  "reset-password": "Reset Password",
+  verify: "Verify Account",
+  communication: "Communication Practice",
+  "live-training": "Live Training",
+  progress: "Progress",
+  "cover-letters": "Cover Letters",
+  dashboard: "Dashboard",
+  "interview-buddy": "Interview Buddy",
+  jobs: "Job Search",
+  "mock-interviews": "Mock Interviews",
+  onboarding: "Profile Setup",
+  preferences: "Preferences",
+  profile: "Profile",
+  resume: "Resume",
+  print: "Resume Preview",
+  "saved-jobs": "Saved Jobs",
 };
 
 export function TopNav() {
@@ -124,12 +147,12 @@ export function TopNav() {
                 "@context": "https://schema.org",
                 "@type": "BreadcrumbList",
                 itemListElement: [
-                  { "@type": "ListItem", position: 1, name: "Home", item: "https://intervai.vpnpro.in/" },
+                  { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
                   ...breadcrumbSegments.map((segment, index) => ({
                     "@type": "ListItem",
                     position: index + 2,
                     name: BREADCRUMB_LABELS[segment] ?? segment.replace(/-/g, " "),
-                    item: `https://intervai.vpnpro.in/${breadcrumbSegments.slice(0, index + 1).join("/")}`,
+                    item: `${SITE_URL}/${breadcrumbSegments.slice(0, index + 1).join("/")}`,
                   })),
                 ],
               }).replace(/</g, "\\u003c"),

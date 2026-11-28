@@ -1,18 +1,12 @@
 import { Footer } from "@/components/marketing/Footer";
 import { TopNav } from "@/components/marketing/TopNav";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = createPageMetadata({
   title: "Interview AI Blog | IntervAi",
   description: "Practical interview advice, technical preparation, career insights, and AI-powered learning resources.",
-  alternates: { canonical: "/blog" },
-  openGraph: { url: "https://intervai.vpnpro.in/blog" },
-  twitter: {
-    card: "summary_large_image",
-    title: "Interview AI Blog | IntervAi",
-    description: "Practical interview advice, technical preparation, career insights, and AI-powered learning resources.",
-    images: ["/opengraph-image"],
-  },
-};
+  path: "/blog",
+});
 
 const articles = [
   { title: "How to Answer ‘Tell Me About Yourself’ in an Interview", description: "Create a clear, confident introduction that connects your experience, skills, and career goals.", category: "Interview Preparation" },

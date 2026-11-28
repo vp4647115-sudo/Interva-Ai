@@ -1,19 +1,13 @@
 import Link from "next/link";
 import { Footer } from "@/components/marketing/Footer";
 import { TopNav } from "@/components/marketing/TopNav";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = createPageMetadata({
   title: "Privacy Policy | IntervAi",
   description: "Privacy policy for IntervAi, covering data collection, use, AI processing, retention, and user rights.",
-  alternates: { canonical: "/privacy" },
-  openGraph: { url: "https://intervai.vpnpro.in/privacy" },
-  twitter: {
-    card: "summary_large_image",
-    title: "Privacy Policy | IntervAi",
-    description: "Privacy policy for IntervAi, covering data collection, use, AI processing, retention, and user rights.",
-    images: ["/opengraph-image"],
-  },
-};
+  path: "/privacy",
+});
 
 export default function PrivacyPage() {
   return (
@@ -120,9 +114,10 @@ export default function PrivacyPage() {
               <section>
                 <h2 className="text-2xl font-bold text-ink-primary">8. Cookies and Similar Technologies</h2>
                 <p className="mt-3 leading-7 text-ink-secondary">
-                  Interview AI uses cookies, local storage, pixels, SDKs, and similar technologies for authentication,
-                  session management, security, preferences, analytics, product performance, fraud prevention, and
-                  marketing where applicable. For additional information, see our Cookie Policy.
+                  Interview AI uses essential cookies, local storage, and similar technologies for authentication,
+                  session management, security, and preferences. Optional analytics are activated only after you
+                  consent and can be changed through cookie preferences. For additional information, see our Cookie
+                  Policy.
                 </p>
               </section>
 

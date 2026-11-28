@@ -1,18 +1,12 @@
 import { Footer } from "@/components/marketing/Footer";
 import { TopNav } from "@/components/marketing/TopNav";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = createPageMetadata({
   title: "Interview Question Bank | IntervAi",
   description: "Practice common HR, behavioral, technical, coding, and software-development interview questions.",
-  alternates: { canonical: "/question-bank" },
-  openGraph: { url: "https://intervai.vpnpro.in/question-bank" },
-  twitter: {
-    card: "summary_large_image",
-    title: "Interview Question Bank | IntervAi",
-    description: "Practice common HR, behavioral, technical, coding, and software-development interview questions.",
-    images: ["/opengraph-image"],
-  },
-};
+  path: "/question-bank",
+});
 
 const questionGroups = [
   { title: "HR Interview Questions", subtitle: "Beginner", questions: ["Tell me about yourself.", "Walk me through your resume.", "Why do you want to join our company?", "Why should we hire you?", "What are your strengths?", "What is your biggest weakness?", "Where do you see yourself in five years?", "Why did you choose this career?", "What motivates you?", "What are your career goals?"] },

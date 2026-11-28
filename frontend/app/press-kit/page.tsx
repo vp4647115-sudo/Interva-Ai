@@ -1,18 +1,12 @@
 import { Footer } from "@/components/marketing/Footer";
 import { TopNav } from "@/components/marketing/TopNav";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = createPageMetadata({
   title: "Press Kit | Interview AI",
   description: "Press kit for Interview AI with company overview, product details, and media contact information.",
-  alternates: { canonical: "/press-kit" },
-  openGraph: { url: "https://intervai.vpnpro.in/press-kit" },
-  twitter: {
-    card: "summary_large_image",
-    title: "Press Kit | Interview AI",
-    description: "Press kit for Interview AI with company overview, product details, and media contact information.",
-    images: ["/opengraph-image"],
-  },
-};
+  path: "/press-kit",
+});
 
 export default function PressKitPage() {
   return (
