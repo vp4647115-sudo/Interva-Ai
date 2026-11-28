@@ -22,7 +22,11 @@ from app.core.config import (
         ),
         (
             "postgresql://db.example.com/app?sslmode=require",
-            "postgresql+asyncpg://db.example.com/app?ssl=require",
+            "postgresql+asyncpg://db.example.com/app?sslmode=require",
+        ),
+        (
+            "postgresql://db.example.com/app?sslmode=require&ssl=true",
+            "postgresql+asyncpg://db.example.com/app?sslmode=require&ssl=true",
         ),
         (
             "sqlite+aiosqlite:///./interviai.db",

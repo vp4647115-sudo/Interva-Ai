@@ -114,6 +114,7 @@ export default function RegisterPage() {
     try {
       await registerWithEmail(data.fullName, data.email, data.password);
       setSuccess("Account created! Check your inbox to verify your email.");
+      router.replace("/auth/verify");
     } catch (err) {
       setServerError(friendlyError(err));
     } finally {

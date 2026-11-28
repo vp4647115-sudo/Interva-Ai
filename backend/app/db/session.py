@@ -28,7 +28,11 @@ validate_deployed_database_url(
         )
     ),
 )
-engine = create_async_engine(settings.database_url, echo=False)
+engine = create_async_engine(
+    settings.database_url,
+    echo=False,
+    connect_args={"statement_cache_size": 0},
+)
 SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 

@@ -2,8 +2,6 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
-
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -18,21 +16,7 @@ def normalize_database_url(value: str) -> str:
     if not value.startswith("postgresql+asyncpg://"):
         return value
 
-    parts = urlsplit(value)
-    query = parse_qsl(parts.query, keep_blank_values=True)
-    if any(key == "sslmode" for key, _ in query):
-        has_ssl = any(key == "ssl" for key, _ in query)
-        query = [
-            (key, val)
-            for key, val in query
-            if key != "sslmode" or not has_ssl
-        ]
-        if not has_ssl:
-            query = [
-                ("ssl" if key == "sslmode" else key, val)
-                for key, val in query
-            ]
-    return urlunsplit(parts._replace(query=urlencode(query, doseq=True)))
+    return value
 
 
 def validate_deployed_database_url(

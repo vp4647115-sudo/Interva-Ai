@@ -105,7 +105,7 @@ export default function LoginPage() {
       // Navigate immediately after Firebase confirms the session. The protected
       // route performs the onboarding check without trapping the user on login
       // when the API is temporarily unavailable or CORS is misconfigured.
-      router.replace("/dashboard");
+      router.replace(await apiClient.postLoginDestination());
     } catch (err) {
       setServerError(friendlyError(err));
     } finally {
