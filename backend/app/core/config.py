@@ -2,9 +2,55 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def normalize_database_url(value: str) -> str:
+    """Adapt common hosted PostgreSQL URLs for SQLAlchemy's asyncpg driver."""
+    if value.startswith("postgres://"):
+        value = "postgresql+asyncpg://" + value.removeprefix("postgres://")
+    elif value.startswith("postgresql://"):
+        value = "postgresql+asyncpg://" + value.removeprefix("postgresql://")
+
+    if not value.startswith("postgresql+asyncpg://"):
+        return value
+
+    parts = urlsplit(value)
+    query = parse_qsl(parts.query, keep_blank_values=True)
+    if any(key == "sslmode" for key, _ in query):
+        has_ssl = any(key == "ssl" for key, _ in query)
+        query = [
+            (key, val)
+            for key, val in query
+            if key != "sslmode" or not has_ssl
+        ]
+        if not has_ssl:
+            query = [
+                ("ssl" if key == "sslmode" else key, val)
+                for key, val in query
+            ]
+    return urlunsplit(parts._replace(query=urlencode(query, doseq=True)))
+
+
+def validate_deployed_database_url(
+    database_url: str,
+    environment: str,
+    *,
+    is_vercel: bool,
+    is_railway: bool = False,
+) -> None:
+    """Require persistent PostgreSQL instead of ephemeral SQLite in deployments."""
+    production = environment.strip().lower() in {"prod", "production"}
+    deployed = production or is_vercel or is_railway
+    if deployed and not database_url.lower().startswith("postgresql+asyncpg://"):
+        raise RuntimeError(
+            "Deployed environments require DATABASE_URL set to a managed "
+            "PostgreSQL connection URI. SQLite and the Supabase project/API "
+            "URL (https://<project-ref>.supabase.co) are not database URLs."
+        )
 
 
 class Settings(BaseSettings):
@@ -13,8 +59,24 @@ class Settings(BaseSettings):
     app_name: str = "InterviewAI API"
     environment: str = "development"
 
-    # CORS: restricted to known frontend origins (rule.md §6)
-    frontend_origin: str = "http://localhost:3000,https://intervai.vpnpro.in"
+    # CORS: comma-separated exact origins, without trailing slashes.
+    frontend_origin: str = "http://localhost:3000"
+    cors_origins: str = ""
+
+    @property
+    def allowed_origins(self) -> list[str]:
+        configured = self.cors_origins or self.frontend_origin
+        origins = [origin.strip().rstrip("/") for origin in configured.split(",") if origin.strip()]
+        # Keep the live frontend reachable even if an older API deployment has
+        # not yet received the FRONTEND_ORIGIN environment variable.
+        # Keep the deployed frontend explicitly allowed even when an older
+        # deployment has stale or missing FRONTEND_ORIGIN configuration.
+        production_origins = {
+            "https://intervai.vpnpro.in",
+            "https://www.intervai.vpnpro.in",
+        }
+        origins.extend(origin for origin in production_origins if origin not in origins)
+        return origins
 
     # Supabase (legacy — retained for storage/DB integration; auth now via Firebase)
     supabase_url: str = ""
@@ -40,6 +102,11 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///./interviai.db"
     mongodb_url: str = "mongodb://localhost:27017"
     mongodb_db_name: str = "interviai"
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def _normalize_database_url(cls, value: str) -> str:
+        return normalize_database_url(value)
 
     # Gemini AI (server-only; never expose to the frontend)
     gemini_api_key: str = ""

@@ -1,7 +1,7 @@
 // Typed API client for the auth domain. All server data flows through here +
 // TanStack Query — no raw fetch in components (rule.md §1).
 
-import { getApiBase } from "@/lib/api-base";
+import { API_BASE } from "@/lib/api-base";
 
 export interface UserOut {
   id: string;
@@ -20,7 +20,7 @@ export interface AuthResponse {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token =
     typeof window !== "undefined" ? localStorage.getItem("interviai_access_token") : null;
-  const resp = await fetch(`${getApiBase()}/api/auth${path}`, {
+  const resp = await fetch(`${API_BASE}/api/auth${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
@@ -80,7 +80,7 @@ export const authService = {
   },
 
   googleStartUrl() {
-    return `${getApiBase()}/api/auth/oauth/google/start`;
+    return `${API_BASE}/api/auth/oauth/google/start`;
   },
 
   logout() {

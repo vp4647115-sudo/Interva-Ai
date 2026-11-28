@@ -8,12 +8,14 @@ POST /api/onboarding/complete after onboarding finishes. /sync and /me only
 report the database-owned onboarding state so the frontend can route."""
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.dependencies import CurrentUser
-from ..core.email_service import dispatch_welcome_email
+from ..core.email_service import dispatch_login_notification_email, dispatch_welcome_email
 from ..core.storage import StorageError, delete_user_file
 from ..db.session import get_db
 from ..models.communication import CommunicationSession
@@ -112,6 +114,37 @@ async def sync_session(user: CurrentUser, db: AsyncSession = Depends(get_db)) ->
         onboarding_completed=is_completed,
         welcome_email_sent=bool(profile.welcome_email_sent) if profile else False,
     )
+
+
+@router.post(
+    "/login-notification",
+    response_model=MessageResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def send_login_notification(user: CurrentUser) -> MessageResponse:
+    """Queue an HTML security email after an explicit successful sign-in."""
+    email = user["email"].strip()
+    if not email:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "A verified account email is required for login notifications.",
+        )
+
+    auth_time = user["claims"].get("auth_time")
+    if not isinstance(auth_time, (int, float)):
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "The authenticated session is missing its sign-in time.",
+        )
+    login_time = datetime.fromtimestamp(auth_time, tz=timezone.utc).strftime(
+        "%B %d, %Y at %H:%M UTC"
+    )
+    dispatch_login_notification_email(
+        to_email=email,
+        user_name=user["claims"].get("name") or user["claims"].get("display_name"),
+        login_time=login_time,
+    )
+    return MessageResponse(message="Login notification email queued.")
 
 
 @router.get("/profile", response_model=ProfileOut)

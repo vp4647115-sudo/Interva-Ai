@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GoogleGenAI } from "@google/genai";
 import type { FaceAnalysisSummary } from "./useFaceEmotionScanner";
-import { getApiBase } from "@/lib/api-base";
+import { API_BASE } from "@/lib/api-base";
 const LIVE_MODEL = "gemini-3.1-flash-live-preview";
 
 const COACH_SYSTEM_INSTRUCTION = `You are InterAI Live Communication Coach.
@@ -337,7 +337,7 @@ export function useGeminiLive() {
         const { getIdToken } = await import("@/lib/firebase/auth");
         const token = await getIdToken();
         const tokenResponse = await fetch(
-          `${getApiBase()}/api/communication/live-token`,
+          `${API_BASE}/api/communication/live-token`,
           {
             method: "POST",
             headers: {

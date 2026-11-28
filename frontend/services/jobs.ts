@@ -1,3 +1,5 @@
+import { API_BASE } from "@/lib/api-base";
+
 export interface Job {
   id: string;
   title: string;
@@ -52,8 +54,6 @@ export async function searchJobs(
 ): Promise<JobSearchResponse> {
   const { getIdToken } = await import("@/lib/firebase/auth");
   const token = await getIdToken();
-  const { getApiBase } = await import("@/lib/api-base");
-  const API_BASE = getApiBase();
   const requestFilters = {
     ...filters,
     remote: filters.remote || null,

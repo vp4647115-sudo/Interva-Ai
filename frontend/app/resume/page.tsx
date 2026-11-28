@@ -11,6 +11,7 @@ import SkillPicker from "@/components/resume/SkillPicker";
 import ResumeDocument from "@/components/resume/ResumeDocument";
 import type { ResumeDraft, ResumeTemplate } from "@/components/resume/types";
 import { analysisToDraft, analyzeResumeFile, improveSection, type ResumeAnalysis } from "@/services/resumeAnalysis";
+import { API_BASE } from "@/lib/api-base";
 
 type Screen = "entry" | "upload" | "analyzing" | "results" | "form" | "generating" | "review";
 type Generated = {
@@ -47,7 +48,6 @@ const FIELD_OPTIONS = [
 ];
 
 const emptyDraft: ResumeDraft = { name: "", role: "", email: "", phone: "", location: "", linkedin: "", summary: "", degree: "", school: "", skills: [], experience: [], projects: [] };
-import { getApiBase } from "@/lib/api-base";
 
 const ANALYSIS_STAGES = ["Reading document", "Extracting information", "Detecting sections", "Evaluating ATS compatibility", "Generating recommendations"];
 const GENERATION_STAGES = ["Validating your information", "Researching the current job market", "Analyzing your profile", "Selecting the best resume structure", "Writing your resume"];
@@ -179,7 +179,7 @@ export default function ResumeBuilderPage() {
     try {
       const { getIdToken } = await import("@/lib/firebase/auth");
       const token = await getIdToken();
-      const resp = await fetch(`${getApiBase()}/api/resume/generate-ai`, {
+      const resp = await fetch(`${API_BASE}/api/resume/generate-ai`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({
@@ -235,7 +235,7 @@ export default function ResumeBuilderPage() {
     try {
       const { getIdToken } = await import("@/lib/firebase/auth");
       const token = await getIdToken();
-      const resp = await fetch(`${getApiBase()}/api/resume/generate-ai`, {
+      const resp = await fetch(`${API_BASE}/api/resume/generate-ai`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({

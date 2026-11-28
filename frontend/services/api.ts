@@ -1,6 +1,7 @@
+import { API_BASE } from "@/lib/api-base";
+
 // Typed API client. Auth is handled by Firebase on the client; requests to the
 // FastAPI backend carry a Firebase ID token in the Authorization header.
-import { getApiBase } from "@/lib/api-base";
 import { getIdToken } from "@/lib/firebase/auth";
 
 export interface UserOut {
@@ -115,7 +116,7 @@ export interface InterviewSession {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = await getIdToken();
-  const resp = await fetch(`${getApiBase()}/api${path}`, {
+  const resp = await fetch(`${API_BASE}/api${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
@@ -134,6 +135,8 @@ export const apiClient = {
   me: () => request<UserOut>("/auth/me"),
   sync: () => request<UserOut>("/auth/sync", { method: "POST" }),
   deleteAccount: () => request<{ message: string }>("/auth/account", { method: "DELETE" }),
+  sendLoginNotification: () =>
+    request<{ message: string }>("/auth/login-notification", { method: "POST" }),
 
   // Profile
   getProfile: () => request<ProfileOut>("/auth/profile"),

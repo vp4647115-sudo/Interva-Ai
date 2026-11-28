@@ -29,6 +29,12 @@ const schema = z.object({
 });
 type FormData = z.infer<typeof schema>;
 
+function queueLoginNotification() {
+  void apiClient.sendLoginNotification().catch((err: unknown) => {
+    console.error("Could not queue the login notification email.", err);
+  });
+}
+
 function friendlyError(err: unknown): string {
   if (err instanceof FirebaseError) {
     // Log the exact code so 400s from identitytoolkit are diagnosable.
@@ -100,6 +106,7 @@ export default function RegisterPage() {
     setBusy(true);
     try {
       await loginWithGoogle();
+      queueLoginNotification();
       router.replace(await apiClient.postLoginDestination());
     } catch (err) {
       setServerError(friendlyError(err));

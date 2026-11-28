@@ -79,12 +79,12 @@ export interface CommProgress {
   };
 }
 
-import { getApiBase } from "@/lib/api-base";
+import { API_BASE } from "@/lib/api-base";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const { getIdToken } = await import("@/lib/firebase/auth");
   const token = await getIdToken();
-  const resp = await fetch(`${getApiBase()}/api/communication${path}`, {
+  const resp = await fetch(`${API_BASE}/api/communication${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
@@ -123,4 +123,3 @@ export function scoreLabel(score: number): string {
   if (score >= 50) return "Developing";
   return "Keep Practicing";
 }
-

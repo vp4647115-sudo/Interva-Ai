@@ -63,33 +63,23 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 
 # Keep CORS outside Starlette's error middleware so even uncaught 500 responses
 # carry the headers browsers need to expose the actual API response.
-# Local Next.js dev servers often auto-increment when ports 3000-3002 are in use,
-# so we allow localhost + 127.0.0.1 on any common development port in addition to
-# the configured production origin.
-_allowed_origins = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:3002",
-    "http://localhost:3003",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:3001",
-    "http://127.0.0.1:3002",
-    "http://127.0.0.1:3003",
-    "https://intervai.vpnpro.in",
-    "http://intervai.vpnpro.in",
-]
-if settings.frontend_origin:
-    for _orig in settings.frontend_origin.split(","):
-        _orig = _orig.strip()
-        if _orig and _orig not in _allowed_origins:
-            _allowed_origins.append(_orig)
-
+# Register CORS last so it wraps the entire application, including error responses.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_allowed_origins,
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|([a-zA-Z0-9-]+\.)*vpnpro\.in)(:\d+)?",
+    allow_origins=settings.allowed_origins,
+    # Keep both hosted and local origins covered. This is intentionally not
+    # conditional on ENVIRONMENT because a stale/missing deployment variable
+    # must not turn every browser request into an opaque CORS failure.
+    allow_origin_regex=(
+        r"^(https://(www\.)?intervai\.vpnpro\.in|https?://(localhost|127\.0\.0\.1)(:\d+)?)$"
+    ),
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-Requested-With"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    # Firebase and browser clients may add preflighted headers beyond the
+    # core auth/content headers. Starlette reflects requested headers when
+    # credentials are enabled, so accepting all requested headers avoids a
+    # deployment-only preflight failure without exposing another origin.
+    allow_headers=["*"],
     expose_headers=["Content-Type"],
+    max_age=86400,
 )

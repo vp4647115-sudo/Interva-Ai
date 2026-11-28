@@ -1,11 +1,11 @@
 /** Typed client for the AI tool endpoints (cover letter, buddy, mock interviews). */
 
-import { getApiBase } from "@/lib/api-base";
+import { API_BASE } from "@/lib/api-base";
 
 async function aiPost<T>(path: string, body: unknown): Promise<T> {
   const { getIdToken } = await import("@/lib/firebase/auth");
   const token = await getIdToken();
-  const resp = await fetch(`${getApiBase()}/api/ai${path}`, {
+  const resp = await fetch(`${API_BASE}/api/ai${path}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

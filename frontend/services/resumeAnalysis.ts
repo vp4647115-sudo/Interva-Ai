@@ -2,7 +2,7 @@
 
 import type { ResumeDraft } from "@/components/resume/types";
 
-import { getApiBase } from "@/lib/api-base";
+import { API_BASE } from "@/lib/api-base";
 
 async function authHeaders(): Promise<Record<string, string>> {
   const { getIdToken } = await import("@/lib/firebase/auth");
@@ -42,7 +42,7 @@ export interface ResumeAnalysis {
 export async function analyzeResumeFile(file: File): Promise<ResumeAnalysis> {
   const form = new FormData();
   form.append("file", file);
-  const resp = await fetch(`${getApiBase()}/api/resume/analyze`, {
+  const resp = await fetch(`${API_BASE}/api/resume/analyze`, {
     method: "POST",
     headers: await authHeaders(),
     body: form,
@@ -58,7 +58,7 @@ export async function improveSection(input: {
   targetRole?: string;
   jobDescription?: string;
 }): Promise<{ improvedContent: string; changes: string[]; warnings: string[] }> {
-  const resp = await fetch(`${getApiBase()}/api/resume/improve`, {
+  const resp = await fetch(`${API_BASE}/api/resume/improve`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...(await authHeaders()) },
     body: JSON.stringify(input),

@@ -17,26 +17,22 @@ const nextConfig = {
     ],
   },
 
-  // Rewrites for proxying API calls to FastAPI in local/custom domain setups
+  // Keep the direct API rewrite for local development and route production
+  // browser requests through the frontend origin to avoid cross-origin issues.
   async rewrites() {
-    if (process.env.VERCEL) {
-      return [];
-    }
     const backendUrl = process.env.BACKEND_INTERNAL_URL || "http://127.0.0.1:8000";
-    return [
-      {
-        source: "/api/:path*",
-        destination: `${backendUrl}/api/:path*`,
-      },
-      {
-        source: "/docs",
-        destination: `${backendUrl}/docs`,
-      },
-      {
-        source: "/openapi.json",
-        destination: `${backendUrl}/openapi.json`,
-      },
+    const apiUrl = new URL(process.env.NEXT_PUBLIC_API_URL ?? "https://nextapi.vpnpro.in").origin;
+    const rewrites = [
+      { source: "/backend-api/:path*", destination: `${apiUrl}/:path*` },
     ];
+    if (!process.env.VERCEL) {
+      rewrites.push(
+        { source: "/api/:path*", destination: `${backendUrl}/api/:path*` },
+        { source: "/docs", destination: `${backendUrl}/docs` },
+        { source: "/openapi.json", destination: `${backendUrl}/openapi.json` },
+      );
+    }
+    return rewrites;
   },
 
   webpack: (config, { isServer }) => {
