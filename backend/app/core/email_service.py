@@ -38,6 +38,28 @@ class EmailMessage:
     text: str
 
 
+def generate_contact_email(*, name: str, email: str, subject: str, message: str) -> EmailMessage:
+    safe_name = _escape(name.strip())
+    safe_email = _escape(email.strip())
+    safe_subject = _escape(subject.strip())
+    safe_message = _escape(message.strip()).replace("\n", "<br>")
+    return EmailMessage(
+        subject=f"Website contact: {subject.strip()}",
+        html=(
+            "<h2>New website contact message</h2>"
+            f"<p><strong>Name:</strong> {safe_name}</p>"
+            f"<p><strong>Email:</strong> {safe_email}</p>"
+            f"<p><strong>Subject:</strong> {safe_subject}</p>"
+            f"<p><strong>Message:</strong><br>{safe_message}</p>"
+        ),
+        text=(
+            "New website contact message\n\n"
+            f"Name: {name.strip()}\nEmail: {email.strip()}\n"
+            f"Subject: {subject.strip()}\n\n{message.strip()}"
+        ),
+    )
+
+
 def _escape(value: str) -> str:
     """Minimal HTML escaping for user-provided values inside the template."""
     return (
@@ -328,7 +350,7 @@ def sender_address() -> str:
     return settings.admin_email or admin_from_list or settings.smtp_user
 
 
-def send_email_sync(to_email: str, message: EmailMessage) -> None:
+def send_email_sync(to_email: str, message: EmailMessage, *, reply_to: str | None = None) -> None:
     """Blocking send of both HTML + plain-text parts. Includes RFC-compliant headers
     (Message-ID, Date, Reply-To) to ensure maximum inbox deliverability."""
     settings = get_settings()
@@ -341,7 +363,7 @@ def send_email_sync(to_email: str, message: EmailMessage) -> None:
     msg["Subject"] = message.subject
     msg["From"] = from_addr
     msg["To"] = to_email
-    msg["Reply-To"] = from_addr
+    msg["Reply-To"] = reply_to or from_addr
     msg["Date"] = formatdate(localtime=True)
     
     # Generate RFC 5322 compliant Message-ID
@@ -435,3 +457,26 @@ def dispatch_login_notification_email(
     thread = threading.Thread(target=_run, daemon=True)
     thread.start()
     return thread
+
+
+def send_contact_email(
+    *,
+    to_email: str,
+    reply_to: str,
+    name: str,
+    email: str,
+    subject: str,
+    message: str,
+) -> None:
+    """Deliver a contact request as a framework background task."""
+    email_message = generate_contact_email(
+        name=name,
+        email=email,
+        subject=subject,
+        message=message,
+    )
+
+    try:
+        send_email_sync(to_email, email_message, reply_to=reply_to)
+    except EmailSendError:
+        logger.exception("Contact form email delivery failed")

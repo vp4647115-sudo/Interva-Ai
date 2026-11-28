@@ -5,6 +5,14 @@ import { TopNav } from "@/components/marketing/TopNav";
 export const metadata = {
   title: "Privacy Policy | IntervAi",
   description: "Privacy policy for IntervAi, covering data collection, use, AI processing, retention, and user rights.",
+  alternates: { canonical: "/privacy" },
+  openGraph: { url: "https://intervai.vpnpro.in/privacy" },
+  twitter: {
+    card: "summary_large_image",
+    title: "Privacy Policy | IntervAi",
+    description: "Privacy policy for IntervAi, covering data collection, use, AI processing, retention, and user rights.",
+    images: ["/opengraph-image"],
+  },
 };
 
 export default function PrivacyPage() {

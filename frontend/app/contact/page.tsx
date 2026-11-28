@@ -1,9 +1,18 @@
 import { Footer } from "@/components/marketing/Footer";
 import { TopNav } from "@/components/marketing/TopNav";
+import { ContactForm } from "@/components/marketing/ContactForm";
 
 export const metadata = {
   title: "Contact Interview AI",
   description: "Contact Interview AI for support, partnerships, media, careers, and privacy questions.",
+  alternates: { canonical: "/contact" },
+  openGraph: { url: "https://intervai.vpnpro.in/contact" },
+  twitter: {
+    card: "summary_large_image",
+    title: "Contact Interview AI",
+    description: "Contact Interview AI for support, partnerships, media, careers, and privacy questions.",
+    images: ["/opengraph-image"],
+  },
 };
 
 export default function ContactPage() {
@@ -71,27 +80,7 @@ export default function ContactPage() {
 
             <section className="mt-10 rounded-2xl border border-border bg-surface p-5">
               <h2 className="text-2xl font-bold text-ink-primary">Send Us a Message</h2>
-              <form className="mt-5 space-y-4">
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-ink-primary">Name</label>
-                  <input placeholder="Your name" className="w-full rounded-input border border-border bg-white px-4 py-3 text-sm text-ink-primary placeholder:text-ink-muted focus:border-primary focus:outline-none" />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-ink-primary">Email</label>
-                  <input type="email" placeholder="Your email" className="w-full rounded-input border border-border bg-white px-4 py-3 text-sm text-ink-primary placeholder:text-ink-muted focus:border-primary focus:outline-none" />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-ink-primary">Subject</label>
-                  <input placeholder="What can we help with?" className="w-full rounded-input border border-border bg-white px-4 py-3 text-sm text-ink-primary placeholder:text-ink-muted focus:border-primary focus:outline-none" />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-ink-primary">Message</label>
-                  <textarea rows={5} placeholder="Write your message" className="w-full rounded-input border border-border bg-white px-4 py-3 text-sm text-ink-primary placeholder:text-ink-muted focus:border-primary focus:outline-none" />
-                </div>
-                <button type="button" className="rounded-input bg-primary px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-hover">
-                  Send Message
-                </button>
-              </form>
+              <ContactForm />
             </section>
 
             <div className="mt-10 rounded-2xl border border-border bg-surface p-5">

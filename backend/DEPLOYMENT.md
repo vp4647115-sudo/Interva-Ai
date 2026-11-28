@@ -13,6 +13,7 @@
    - `FIREBASE_SERVICE_ACCOUNT_JSON` with the Firebase service-account JSON stored as a Railway secret
    - `GEMINI_API_KEY` if AI endpoints should be enabled
    - `SMTP_USER` and `SMTP_PASSWORD` if login notifications and other email should be sent
+   - `CONTACT_EMAIL` for website contact-form notifications (defaults to `ADMIN_EMAIL`, then `SMTP_USER`)
    - `APP_URL=https://intervai.vpnpro.in`
 5. Deploy the service and generate or attach a public HTTPS domain. Open `https://<backend-domain>/health`; it must return `{"status":"ok"}`.
 
@@ -35,5 +36,7 @@ Keep all service-account keys, API keys, passwords, and database credentials in 
 ## Connect Vercel
 
 The frontend reads `NEXT_PUBLIC_API_URL` from the Vercel environment and proxies `/backend-api/:path*` to that origin. Keep it set to `https://nextapi.vpnpro.in/`; the frontend normalizes the trailing slash. Do not use `https://api.intervai.vpnpro.in`, which aliases to the frontend and produces 404s. Deploy the frontend after merging the API proxy fix.
+
+Optional Google Analytics page-view and event tracking is enabled only after a visitor accepts analytics cookies. Set `NEXT_PUBLIC_GA_MEASUREMENT_ID` in the Vercel frontend environment to enable it; without that value, consent is still saved but no third-party analytics script is loaded. The public contact form requires the backend SMTP settings above and a verified recipient address.
 
 After deployment, the browser should call the frontend's `/backend-api/api/...` path and Vercel should forward it to the FastAPI `/api/...` route. A `401` on an auth route without a Firebase token means the API route is reachable; a `404` usually means the frontend proxy target is wrong or the frontend has not been redeployed with the fix.

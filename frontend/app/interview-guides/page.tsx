@@ -4,6 +4,14 @@ import { TopNav } from "@/components/marketing/TopNav";
 export const metadata = {
   title: "Interview Guides | IntervAi",
   description: "Practical, step-by-step guides for HR, technical, coding, fresher, and software developer interviews.",
+  alternates: { canonical: "/interview-guides" },
+  openGraph: { url: "https://intervai.vpnpro.in/interview-guides" },
+  twitter: {
+    card: "summary_large_image",
+    title: "Interview Guides | IntervAi",
+    description: "Practical, step-by-step guides for HR, technical, coding, fresher, and software developer interviews.",
+    images: ["/opengraph-image"],
+  },
 };
 
 const guides = [

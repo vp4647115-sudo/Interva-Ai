@@ -4,6 +4,14 @@ import { TopNav } from "@/components/marketing/TopNav";
 export const metadata = {
   title: "Interview Question Bank | IntervAi",
   description: "Practice common HR, behavioral, technical, coding, and software-development interview questions.",
+  alternates: { canonical: "/question-bank" },
+  openGraph: { url: "https://intervai.vpnpro.in/question-bank" },
+  twitter: {
+    card: "summary_large_image",
+    title: "Interview Question Bank | IntervAi",
+    description: "Practice common HR, behavioral, technical, coding, and software-development interview questions.",
+    images: ["/opengraph-image"],
+  },
 };
 
 const questionGroups = [

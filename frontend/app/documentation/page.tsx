@@ -4,6 +4,14 @@ import { TopNav } from "@/components/marketing/TopNav";
 export const metadata = {
   title: "Interview AI Documentation | IntervAi",
   description: "The Interview AI user guide: getting started, interviews, voice and video, resume analysis, privacy, troubleshooting, and more.",
+  alternates: { canonical: "/documentation" },
+  openGraph: { url: "https://intervai.vpnpro.in/documentation" },
+  twitter: {
+    card: "summary_large_image",
+    title: "Interview AI Documentation | IntervAi",
+    description: "The Interview AI user guide: getting started, interviews, voice and video, resume analysis, privacy, troubleshooting, and more.",
+    images: ["/opengraph-image"],
+  },
 };
 
 type DocBlock =

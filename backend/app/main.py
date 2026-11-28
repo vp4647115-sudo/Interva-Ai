@@ -11,6 +11,7 @@ from .api.admin_questions import router as admin_questions_router
 from .api.ai_tools import router as ai_tools_router
 from .api.auth import router as auth_router
 from .api.communication import router as communication_router
+from .api.contact import router as contact_router
 from .api.crud import router as crud_router
 from .api.files import router as files_router
 from .api.interview_engine import router as interview_engine_router
@@ -31,6 +32,7 @@ app.include_router(crud_router)
 app.include_router(admin_questions_router)
 app.include_router(ai_tools_router)
 app.include_router(communication_router)
+app.include_router(contact_router)
 app.include_router(jobs_router)
 app.include_router(resume_ai_router)
 app.include_router(resume_analysis_router)

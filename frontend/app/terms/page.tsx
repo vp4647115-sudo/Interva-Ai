@@ -5,6 +5,14 @@ import { TopNav } from "@/components/marketing/TopNav";
 export const metadata = {
   title: "Terms and Conditions | IntervAi",
   description: "Terms and conditions for IntervAi, covering eligibility, account responsibilities, acceptable use, AI content, subscriptions, and legal terms.",
+  alternates: { canonical: "/terms" },
+  openGraph: { url: "https://intervai.vpnpro.in/terms" },
+  twitter: {
+    card: "summary_large_image",
+    title: "Terms and Conditions | IntervAi",
+    description: "Terms and conditions for IntervAi, covering eligibility, account responsibilities, acceptable use, AI content, subscriptions, and legal terms.",
+    images: ["/opengraph-image"],
+  },
 };
 
 export default function TermsPage() {

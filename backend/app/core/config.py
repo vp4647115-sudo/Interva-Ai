@@ -131,6 +131,7 @@ class Settings(BaseSettings):
     smtp_user: str = ""
     smtp_password: str = ""
     admin_email: str = ""
+    contact_email: str = ""
     email_from_name: str = "Interview AI"
 
     # Public application URL used in email links (never hardcode localhost).

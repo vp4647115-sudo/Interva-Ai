@@ -4,6 +4,14 @@ import { TopNav } from "@/components/marketing/TopNav";
 export const metadata = {
   title: "Frequently Asked Questions | IntervAi",
   description: "Answers to common questions about Interview AI, practice, features, privacy, and subscriptions.",
+  alternates: { canonical: "/faq" },
+  openGraph: { url: "https://intervai.vpnpro.in/faq" },
+  twitter: {
+    card: "summary_large_image",
+    title: "Frequently Asked Questions | IntervAi",
+    description: "Answers to common questions about Interview AI, practice, features, privacy, and subscriptions.",
+    images: ["/opengraph-image"],
+  },
 };
 
 const faqs = [

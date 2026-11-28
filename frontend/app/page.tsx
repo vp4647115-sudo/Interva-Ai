@@ -5,6 +5,15 @@ import { FeatureGrid, ResumeExamples, Testimonials } from "@/components/marketin
 import { CTABanner } from "@/components/marketing/CTABanner";
 import { FAQItem } from "@/components/ui/FAQItem";
 import { Footer } from "@/components/marketing/Footer";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "IntervAi — Practice interviews with AI",
+  description:
+    "Practice role-specific AI mock interviews, get structured feedback, and build a personalized plan to interview with confidence.",
+  alternates: { canonical: "/" },
+  openGraph: { url: "https://intervai.vpnpro.in" },
+};
 
 const faqs = [
   {

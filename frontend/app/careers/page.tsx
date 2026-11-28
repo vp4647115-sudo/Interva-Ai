@@ -4,6 +4,14 @@ import { TopNav } from "@/components/marketing/TopNav";
 export const metadata = {
   title: "Careers at Interview AI | IntervAi",
   description: "Careers at Interview AI: build the future of interview preparation with AI, products, and user experience.",
+  alternates: { canonical: "/careers" },
+  openGraph: { url: "https://intervai.vpnpro.in/careers" },
+  twitter: {
+    card: "summary_large_image",
+    title: "Careers at Interview AI | IntervAi",
+    description: "Careers at Interview AI: build the future of interview preparation with AI, products, and user experience.",
+    images: ["/opengraph-image"],
+  },
 };
 
 export default function CareersPage() {

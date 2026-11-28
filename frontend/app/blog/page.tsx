@@ -4,6 +4,14 @@ import { TopNav } from "@/components/marketing/TopNav";
 export const metadata = {
   title: "Interview AI Blog | IntervAi",
   description: "Practical interview advice, technical preparation, career insights, and AI-powered learning resources.",
+  alternates: { canonical: "/blog" },
+  openGraph: { url: "https://intervai.vpnpro.in/blog" },
+  twitter: {
+    card: "summary_large_image",
+    title: "Interview AI Blog | IntervAi",
+    description: "Practical interview advice, technical preparation, career insights, and AI-powered learning resources.",
+    images: ["/opengraph-image"],
+  },
 };
 
 const articles = [

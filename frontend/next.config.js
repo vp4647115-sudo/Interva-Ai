@@ -48,6 +48,27 @@ const nextConfig = {
     return rewrites;
   },
 
+  async headers() {
+    const headers = [
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "X-Frame-Options", value: "DENY" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      { key: "Permissions-Policy", value: "geolocation=(), browsing-topics=()" },
+    ];
+    if (process.env.NODE_ENV === "production") {
+      headers.push({
+        key: "Strict-Transport-Security",
+        value: "max-age=31536000; includeSubDomains",
+      });
+    }
+    return [
+      {
+        source: "/(.*)",
+        headers,
+      },
+    ];
+  },
+
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve = config.resolve || {};
