@@ -8,16 +8,19 @@ import {
   createUserWithEmailAndPassword,
   deleteUser,
   getAuth,
+  getRedirectResult,
   reauthenticateWithCredential,
   reauthenticateWithPopup,
   sendEmailVerification,
   sendPasswordResetEmail,
   setPersistence,
   signInWithEmailAndPassword,
-  signInWithPopup,
+  signInWithRedirect,
   signOut,
   updateProfile,
   type Auth,
+  type User,
+  type UserCredential,
 } from "firebase/auth";
 import { firebaseConfig } from "./config";
 
@@ -34,6 +37,7 @@ let _app: FirebaseApp | null = null;
 let _auth: Auth | null = null;
 let _persistenceReady: Promise<void> = Promise.resolve();
 let _persistenceError: unknown = null;
+let _googleRedirectResult: Promise<UserCredential | null> | null = null;
 
 function getFirebaseApp(): FirebaseApp {
   if (_app) return _app;
@@ -59,7 +63,8 @@ async function getReadyFirebaseAuth(): Promise<Auth> {
 }
 
 export async function prepareFirebaseAuth(): Promise<void> {
-  await getReadyFirebaseAuth();
+  const auth = await getReadyFirebaseAuth();
+  await auth.authStateReady();
 }
 
 // For call-sites that import `firebaseAuth` directly (e.g. onAuthStateChanged)
@@ -71,7 +76,7 @@ export const firebaseAuth: Auth = new Proxy({} as Auth, {
 });
 
 export async function registerWithEmail(name: string, email: string, password: string) {
-  const auth = getFirebaseAuth();
+  const auth = await getReadyFirebaseAuth();
   const cred = await createUserWithEmailAndPassword(auth, email, password);
   await updateProfile(cred.user, { displayName: name });
   await sendEmailVerification(cred.user);
@@ -79,7 +84,7 @@ export async function registerWithEmail(name: string, email: string, password: s
 }
 
 export async function loginWithEmail(email: string, password: string) {
-  const auth = getFirebaseAuth();
+  const auth = await getReadyFirebaseAuth();
   const cred = await signInWithEmailAndPassword(auth, email, password);
   return cred.user;
 }
@@ -87,22 +92,31 @@ export async function loginWithEmail(email: string, password: string) {
 export async function loginWithGoogle() {
   const auth = await getReadyFirebaseAuth();
   const provider = new GoogleAuthProvider();
-  // Complete the auth flow in the current page so users do not depend on
-  // Firebase Hosting's /__/firebase/init.json redirect bootstrap endpoint.
-  const result = await signInWithPopup(auth, provider);
-  return result.user;
+  await signInWithRedirect(auth, provider);
+}
+
+export async function completeGoogleRedirect(): Promise<UserCredential | null> {
+  const auth = await getReadyFirebaseAuth();
+  _googleRedirectResult ??= getRedirectResult(auth);
+  return _googleRedirectResult;
+}
+
+export async function getCurrentFirebaseUser(): Promise<User | null> {
+  const auth = await getReadyFirebaseAuth();
+  await auth.authStateReady();
+  return auth.currentUser;
 }
 
 export async function resetPassword(email: string) {
-  await sendPasswordResetEmail(getFirebaseAuth(), email);
+  await sendPasswordResetEmail(await getReadyFirebaseAuth(), email);
 }
 
 export async function logout() {
-  await signOut(getFirebaseAuth());
+  await signOut(await getReadyFirebaseAuth());
 }
 
 export async function reauthenticateCurrentUser(password?: string) {
-  const user = getFirebaseAuth().currentUser;
+  const user = (await getReadyFirebaseAuth()).currentUser;
   if (!user) throw new Error("You are signed out. Please sign in again.");
 
   const providerIds = user.providerData.map((provider) => provider.providerId);
@@ -122,16 +136,13 @@ export async function reauthenticateCurrentUser(password?: string) {
 }
 
 export async function deleteCurrentUser() {
-  const user = getFirebaseAuth().currentUser;
+  const user = (await getReadyFirebaseAuth()).currentUser;
   if (!user) throw new Error("You are signed out. Please sign in again.");
   await deleteUser(user);
 }
 
 export async function getIdToken(): Promise<string | null> {
   const auth = await getReadyFirebaseAuth();
-  // Firebase restores browserLocalPersistence asynchronously. Requests made
-  // during that window otherwise omit Authorization and produce a misleading
-  // backend 401 on protected routes such as /onboarding/state.
   await auth.authStateReady();
   return auth.currentUser?.getIdToken() ?? null;
 }

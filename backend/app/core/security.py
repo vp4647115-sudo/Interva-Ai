@@ -1,12 +1,16 @@
-"""JWT verification against Supabase and small auth helpers."""
+"""Firebase ID-token verification and small auth helpers."""
 from __future__ import annotations
 
-import jwt
+import logging
+
+from firebase_admin import auth as firebase_auth
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from .config import get_settings
 from .firebase import get_firebase_admin
+
+logger = logging.getLogger(__name__)
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -30,9 +34,11 @@ def verify_firebase_id_token(token: str) -> dict:
 
     Raises 401 on any invalid/expired/wrong-audience token.
     """
-    from firebase_admin import auth as fb_auth
-
+    app = get_firebase_admin()
     try:
-        return fb_auth.verify_id_token(token, app=get_firebase_admin())
-    except Exception as exc:  # firebase_admin raises several exception types
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, f"Invalid session: {exc}") from exc
+        return firebase_auth.verify_id_token(token, app=app)
+    except firebase_auth.InvalidIdTokenError as exc:
+        logger.info("Rejected an invalid or expired Firebase ID token.")
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED, "Invalid or expired Firebase ID token"
+        ) from exc

@@ -14,6 +14,7 @@ import { AuthCard } from "@/components/ui/AuthCard";
 import { AuthTrustPanel } from "@/components/auth/AuthTrustPanel";
 import { PillButton } from "@/components/ui/PillButton";
 import {
+  completeGoogleRedirect,
   loginWithEmail,
   loginWithGoogle,
   prepareFirebaseAuth,
@@ -68,13 +69,32 @@ export default function LoginPage() {
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
   useEffect(() => {
-    void prepareFirebaseAuth()
-      .then(() => setAuthReady(true))
-      .catch((err) => {
+    let active = true;
+
+    async function initializeAuth() {
+      try {
+        await prepareFirebaseAuth();
+        if (active) setAuthReady(true);
+
+        const result = await completeGoogleRedirect();
+        if (!result?.user || !active) return;
+
+        setBusy(true);
+        queueLoginNotification();
+        router.replace(await apiClient.postLoginDestination());
+      } catch (err) {
+        if (!active) return;
         setServerError(friendlyError(err));
         setAuthReady(true);
-      });
-  }, []);
+        setBusy(false);
+      }
+    }
+
+    void initializeAuth();
+    return () => {
+      active = false;
+    };
+  }, [router]);
 
   async function onSubmit(data: FormData) {
     setServerError(null);
@@ -98,11 +118,9 @@ export default function LoginPage() {
     setBusy(true);
     try {
       await loginWithGoogle();
-      queueLoginNotification();
-      router.replace(await apiClient.postLoginDestination());
+      setBusy(false);
     } catch (err) {
       setServerError(friendlyError(err));
-    } finally {
       setBusy(false);
     }
   }

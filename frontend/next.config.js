@@ -25,6 +25,19 @@ const nextConfig = {
     const rewrites = [
       { source: "/backend-api/:path*", destination: `${apiUrl}/:path*` },
     ];
+    const firebaseProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    const firebaseAuthDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
+    if (
+      firebaseProjectId &&
+      firebaseAuthDomain &&
+      firebaseAuthDomain !== `${firebaseProjectId}.firebaseapp.com`
+    ) {
+      const firebaseOrigin = `https://${firebaseProjectId}.firebaseapp.com`;
+      rewrites.push(
+        { source: "/__/auth/:path*", destination: `${firebaseOrigin}/__/auth/:path*` },
+        { source: "/__/firebase/:path*", destination: `${firebaseOrigin}/__/firebase/:path*` },
+      );
+    }
     if (!process.env.VERCEL) {
       rewrites.push(
         { source: "/api/:path*", destination: `${backendUrl}/api/:path*` },

@@ -21,6 +21,15 @@ backend now refuses to start with SQLite or a non-PostgreSQL `DATABASE_URL`,
 so a bad database setting fails visibly at deployment instead of producing
 authenticated API 500 errors at runtime.
 
+The onboarding-state endpoint expects the `onboarding_state` table created by
+the initial Alembic migration. After deployment, verify the production
+database is at the current Alembic head with `alembic current`. If the API is
+deployed through the Python function in `vercel.json` instead of this Docker
+service, that function does not run migrations automatically; run
+`alembic upgrade head` from the backend root with the production
+`DATABASE_URL` before sending traffic. Do not create tables from request
+handlers or run schema migrations independently in every serverless instance.
+
 Keep all service-account keys, API keys, passwords, and database credentials in Railway's secret variables. Never put them in the frontend or commit them to Git.
 
 ## Connect Vercel
