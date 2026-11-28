@@ -5,7 +5,7 @@ import { BookmarkX, Search } from "lucide-react";
 import Sidebar from "@/components/dashboard/Sidebar";
 import JobCard from "@/components/jobs/JobCard";
 import JobDetails from "@/components/jobs/JobDetails";
-import { EmptyJobs } from "@/components/jobs/JobStates";
+import { EmptyJobs, JobSkeleton } from "@/components/jobs/JobStates";
 import type { Job } from "@/services/jobs";
 
 const STORE_KEY = "intervai-saved-jobs";
@@ -38,7 +38,12 @@ export default function SavedJobsPage() {
           <p className="mt-2 text-sm text-ink-secondary">Jobs you bookmarked from your search results.</p>
         </header>
         <div className="mx-auto max-w-7xl px-5 py-7 sm:px-8">
-          {!ready ? null : jobs.length === 0 ? (
+          {!ready ? (
+            <div aria-label="Loading saved jobs" aria-busy="true" className="grid gap-4 lg:grid-cols-2">
+              <JobSkeleton />
+              <JobSkeleton />
+            </div>
+          ) : jobs.length === 0 ? (
             <EmptyJobs message="No saved jobs yet" hint="Search for jobs and use the bookmark action to save them here." />
           ) : (
             <div className="grid gap-4 lg:grid-cols-2">

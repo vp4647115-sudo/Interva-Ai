@@ -18,6 +18,7 @@ import { ErrorState, Skeleton } from "@/components/ui/States";
 import RequireOnboarding from "@/components/auth/RequireOnboarding";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { deleteCurrentUser, reauthenticateCurrentUser } from "@/lib/firebase/auth";
+import { useToast } from "@/components/providers/ToastProvider";
 
 type Tab =
   | "overview"
@@ -54,6 +55,7 @@ export default function ProfilePage() {
 
 function ProfileContent() {
   const router = useRouter();
+  const { showToast } = useToast();
   const [tab, setTab] = useState<Tab>("overview");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -129,8 +131,11 @@ function ProfileContent() {
       await fn();
       cancelEdit();
       await load();
+      showToast("Changes saved.", "success");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Action failed.");
+      const message = e instanceof Error ? e.message : "Action failed.";
+      setError(message);
+      showToast(message, "error");
     }
   }
 
@@ -141,8 +146,11 @@ function ProfileContent() {
       setProfile(updated);
       setEditingProfile(false);
       setProfileDraft({});
+      showToast("Profile updated.", "success");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to save profile.");
+      const message = e instanceof Error ? e.message : "Failed to save profile.";
+      setError(message);
+      showToast(message, "error");
     } finally {
       setSavingProfile(false);
     }
